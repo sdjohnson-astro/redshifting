@@ -1,0 +1,86 @@
+spec1D window keystrokes:
+
+n :              advance +1 to next object
+N :              advance +10 objects
+b :              advance -1 to previous object
+B :              advance -10 objects
+[ :              pan left 1/3 of viewed range
+] :              pan left 1/3 of viewed range
+{ :              pan left viewed range
+} :              pan left viewed range
+x :              zoom in x and center on current mouse position
+X :              zoom out in x and center on current mouse position
+y :              zoom in y and center on current mouse position
+Y :              zoom out in Y and center on current mouse position
+w/W :            show full spectrum range (undo any zooming or plotting)
++/= :            increase smoothing
+-/_ :            decrease smoothing
+m/M :            hit once left and once right to mask a spectral region
+u/U :            hit once left and once right to unmask a spectral region
+
+g/G :            classify object as a galaxy
+h/H :            classify object as a star
+j/J :            classify object as a quasar
+
+a/A :            set redshift quality to robust
+s/S :            set redshift quality to single-line
+d/D :            set redshift quality to damn no redshift
+f/F :            set redshift quality to WTF?
+
+R :              redshift all objects over detault range with current classification
+r :              redshift this object over default range with current classification
+
+; :              increment redshift -0.0001
+: :              increment redshift -0.001
+' :              increment redshift +0.0001
+" :              increment redshift +0.001
+, :              increment redshift -0.01
+< :              increment redshift -0.1
+. :              increment redshift +0.01
+> :              increment redshift +0.1
+
+return/enter:   save
+
+available keys:
+
+
+
+1 Halpha Ha6564
+2 OIII 5008 OIII5008
+3 OIII 4959 OIII4960
+4 Hbeta Hb4862
+5 Hgamma Hg4341
+6 Hdelta Hd4102
+7 OII    OII3728
+8 CIII   CIII1908
+9 CIV    CIV1549
+0 Lya    HI1215
+
+! NaI:   setRedshiftNaI5895
+@ MgI    setRedshiftMgI5176
+# G-band setRedshiftGband4305
+$ CaII H setRedshiftCaIIH3969
+% CaII K setRedshiftCaIIK3934
+^ MgII   setRedshiftMgII2799
+
+
+
+q
+s
+e
+t
+y
+i
+o
+p
+a
+d
+f
+h
+j
+k
+l
+z
+x
+c
+v
