@@ -11,4 +11,5 @@ and enter this command into the terminal: cubs_redshifting.py -m maskname
 
 
 # Bugs:
-model fit is not updating after local redshift determination or local fit
+
+# Annoyances
