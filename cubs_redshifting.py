@@ -1503,7 +1503,7 @@ class ldss3_redshiftgui:
       self.comment_text.setText(self.objects[self.row-1]['comment'])
       
       self.spec = fits.getdata(getspec1Dname(self.mask, self.row, self.id))
-      print(Table(self.spec))
+      
       self.wave = self.spec['wave']
       self.flux1D = self.spec['flux']
       self.error1D = self.spec['error']
