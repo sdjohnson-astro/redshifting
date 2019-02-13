@@ -1250,9 +1250,9 @@ class ldss3_redshiftgui:
          redshifts.sort('z')
          self.redshifts = redshifts
          
-      
+
+      self.z = z      
       self.save()
-      self.z = z
       #self.setSpec()
 
       self.draw()
@@ -1585,11 +1585,11 @@ class ldss3_redshiftgui:
                                   pen=pg.mkPen('r', width=2, style=QtCore.Qt.DotLine)))
       
       
-      self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
+      self.plot_spec1D.plot(self.wave, self.spec['flux']*self.spec['mask'],
                         pen=pg.mkPen('w', width=2), clear=True)
-      self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
+      self.plot_spec1D.plot(self.wave, self.spec['error']*self.spec['mask'],
                         pen=pg.mkPen('b', width=2))
-      self.plot_spec1D.plot(self.wave, self.model1D*self.spec['mask'],
+      self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
                         pen=pg.mkPen('r', width=2))
       #self.plot_spec1D.setYRange(np.percentile(self.flux1D, [5]),
       #                         np.percentile(self.flux1D, [99.9]),
