@@ -41,10 +41,7 @@ r :              redshift this object over default range with current classifica
 
 return/enter:   save
 
-available keys:
-
-
-
+quick redshift assignment keys
 1 Halpha Ha6564
 2 OIII 5008 OIII5008
 3 OIII 4959 OIII4960
