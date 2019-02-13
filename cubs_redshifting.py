@@ -1585,9 +1585,9 @@ class ldss3_redshiftgui:
                                   pen=pg.mkPen('r', width=2, style=QtCore.Qt.DotLine)))
       
       
-      self.plot_spec1D.plot(self.wave, self.spec['flux']*self.spec['mask'],
+      self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
                         pen=pg.mkPen('w', width=2), clear=True)
-      self.plot_spec1D.plot(self.wave, self.spec['error']*self.spec['mask'],
+      self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
                         pen=pg.mkPen('b', width=2))
       self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
                         pen=pg.mkPen('r', width=2))
