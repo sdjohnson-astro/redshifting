@@ -326,6 +326,10 @@ def findz_star(spec, zmin=-0.005, zmax=0.005, dz=0.000025):
    redshifts['fluxcal1'] = 0.0
    redshifts['fluxcal2'] = 0.0
    
+   constant = np.ones(len(spec))
+   linear = np.arange(len(spec))
+   square = np.arange(len(spec))**2
+   
    #redshifts = Table(redshifts)
    
    # Precompute some matrices
@@ -360,7 +364,7 @@ def findz_star(spec, zmin=-0.005, zmax=0.005, dz=0.000025):
          mask = (eigen1 != -999.0).astype(float)
       
          At = np.matrix([eigen1, eigen2, eigen3, eigen4, eigen5, eigen6, eigen7,
-                         eigen8, eigen9, eigen10, eigen11])
+                         eigen8, eigen9, eigen10, eigen11, constant, linear, square])
          A = At.transpose()
          
       
@@ -375,7 +379,10 @@ def findz_star(spec, zmin=-0.005, zmax=0.005, dz=0.000025):
                            eigen8*one_over_sigmasquared*mask,
                            eigen9*one_over_sigmasquared*mask,
                            eigen10*one_over_sigmasquared*mask,
-                           eigen11*one_over_sigmasquared])#At*Ci
+                           eigen11*one_over_sigmasquared*mask,
+                           constant*one_over_sigmasquared*mask,
+                           linear*one_over_sigmasquared*mask,
+                           square*one_over_sigmasquared*mask])#At*Ci
          eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
          eigenvalues = eigenvalues.getA1()
       
@@ -384,7 +391,8 @@ def findz_star(spec, zmin=-0.005, zmax=0.005, dz=0.000025):
                  + eigenvalues[4]*eigen5 + eigenvalues[5]*eigen6 \
                  + eigenvalues[6]*eigen7 + eigenvalues[7]*eigen8 \
                  + eigenvalues[8]*eigen9 + eigenvalues[9]*eigen10 \
-                 + eigenvalues[10]*eigen11
+                 + eigenvalues[10]*eigen11 \
+                 + + eigenvalues[11]*constant + eigenvalues[12]*linear + eigenvalues[13]*square
          model = model*mask
               
          chi2 = np.sum(np.square(flux - model)*one_over_sigmasquared*mask)
@@ -409,6 +417,9 @@ def findz_star(spec, zmin=-0.005, zmax=0.005, dz=0.000025):
       redshift['eigen9'] = eigenvalues[8]
       redshift['eigen10'] = eigenvalues[9]
       redshift['eigen11'] = eigenvalues[10]
+      redshifts['fluxcal0'] = eigenvalues[11]
+      redshifts['fluxcal1'] = eigenvalues[12]
+      redshifts['fluxcal2'] = eigenvalues[13]
    
    return redshifts
    
@@ -443,6 +454,10 @@ def findz_qso(spec, zmin=0.0, zmax=3.0, dz=0.0005):
    redshifts['fluxcal1'] = 0.0
    redshifts['fluxcal2'] = 0.0
    
+   constant = np.ones(len(spec))
+   linear = np.arange(len(spec))
+   square = np.arange(len(spec))**2
+   
    
    
    # Precompute some matrices
@@ -469,7 +484,7 @@ def findz_qso(spec, zmin=0.0, zmax=3.0, dz=0.0005):
          
          mask = (eigen1 != -999.0).astype(float)*spec['mask']
       
-         At = np.matrix([eigen1, eigen2, eigen3, eigen4])
+         At = np.matrix([eigen1, eigen2, eigen3, eigen4, constant, linear, square])
          A = At.transpose()
          
       
@@ -477,12 +492,16 @@ def findz_qso(spec, zmin=0.0, zmax=3.0, dz=0.0005):
          AtCi = np.matrix([eigen1*one_over_sigmasquared*mask,
                            eigen2*one_over_sigmasquared*mask,
                            eigen3*one_over_sigmasquared*mask,
-                           eigen4*one_over_sigmasquared*mask])#At*Ci
+                           eigen4*one_over_sigmasquared*mask,
+                           constant*one_over_sigmasquared*mask,
+                           linear*one_over_sigmasquared*mask,
+                           square*one_over_sigmasquared*mask])#At*Ci
          eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
          eigenvalues = eigenvalues.getA1()
       
          model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
-                 + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4
+                 + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4 \
+                 + eigenvalues[4]*constant + eigenvalues[5]*linear + eigenvalues[6]*square
          model = model*mask     
          chi2 = np.sum(np.square(flux - model)*one_over_sigmasquared*mask)
          dof = np.sum(mask) - 4.0
@@ -499,6 +518,9 @@ def findz_qso(spec, zmin=0.0, zmax=3.0, dz=0.0005):
       redshift['eigen2'] = eigenvalues[1]
       redshift['eigen3'] = eigenvalues[2]
       redshift['eigen4'] = eigenvalues[3]
+      redshifts['fluxcal0'] = eigenvalues[4]
+      redshifts['fluxcal1'] = eigenvalues[5]
+      redshifts['fluxcal2'] = eigenvalues[6]
 
    
    return redshifts
@@ -628,6 +650,11 @@ def findz_galaxy(spec, zmin=-0.1, zmax=1.5, dz=0.0001):
    redshifts['fluxcal1'] = 0.0
    redshifts['fluxcal2'] = 0.0
    
+   
+   constant = np.ones(len(spec))
+   linear = np.arange(len(spec))
+   square = np.arange(len(spec))**2
+   
    #redshifts = Table(redshifts)
    
    # Precompute some matrices
@@ -662,17 +689,24 @@ def findz_galaxy(spec, zmin=-0.1, zmax=1.5, dz=0.0001):
          
          mask = (eigen1 != -999.0).astype(float)*spec['mask']
          
-         At = np.matrix([eigen1, eigen2, eigen3, eigen4])
+         At = np.matrix([eigen1, eigen2, eigen3, eigen4, constant, linear, square])
          A = At.transpose()
          
       
       
-         AtCi = np.matrix([eigen1*one_over_sigmasquared*mask, eigen2*one_over_sigmasquared*mask, eigen3*one_over_sigmasquared*mask, eigen4*one_over_sigmasquared*mask])#At*Ci
+         AtCi = np.matrix([eigen1*one_over_sigmasquared*mask,
+                           eigen2*one_over_sigmasquared*mask,
+                           eigen3*one_over_sigmasquared*mask,
+                           eigen4*one_over_sigmasquared*mask,
+                           constant*one_over_sigmasquared*mask,
+                           linear*one_over_sigmasquared*mask,
+                           square*one_over_sigmasquared*mask])#At*Ci
          eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
          eigenvalues = eigenvalues.getA1()
       
          model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
-                 + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4
+                 + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4 \
+                 + eigenvalues[4]*constant + eigenvalues[5]*linear + eigenvalues[6]*square
               
          chi2 = np.sum(np.square(flux - model)*one_over_sigmasquared*mask)
          dof = np.sum(mask) - 4
@@ -690,6 +724,9 @@ def findz_galaxy(spec, zmin=-0.1, zmax=1.5, dz=0.0001):
       redshift['eigen2'] = eigenvalues[1]
       redshift['eigen3'] = eigenvalues[2]
       redshift['eigen4'] = eigenvalues[3]
+      redshifts['fluxcal0'] = eigenvalues[4]
+      redshifts['fluxcal1'] = eigenvalues[5]
+      redshifts['fluxcal2'] = eigenvalues[6]
 
    
    return redshifts
