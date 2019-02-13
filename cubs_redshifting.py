@@ -388,7 +388,7 @@ class ldss3_redshiftgui:
       self.tree.setParameters(self.param)
       
       
-      self.features = Table.read('/Users/seanjohnson/Dropbox/research_astro/pyobs/data/linelists/redshiftLines.dat', format='ascii')
+      self.features = Table.read(os.environ['REDSHIFTING'] + '/redshiftLines.dat', format='ascii')
       
       
       self.objectsTable = pg.TableWidget(editable=False, sortable=False)
