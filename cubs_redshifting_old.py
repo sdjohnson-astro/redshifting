@@ -62,103 +62,138 @@ def getredshift1Dname(mask, row, id):
    return '{}_spec1D/{}_{}_{}_redshift.fits'.format(mask, mask, row, id)
 
 #for CarPy output
-def createSpec1Dfiles(mask,version='carpy'):
+def createSpec1Dfiles(mask):
    print('Creating spec1D files')
+   import cPickle
+   gdict=cPickle.load(open('{}.p'.format(mask),'rb'))
+   # spec1DList = glob.glob('{}/*_1dspec.fits'.format(mask))
 
-   if version=='carpy':
-      try: #Stupid Python 2/3 compatibility
-         import cPickle as pickle
-      except:
-         import pickle
-      gdict=pickle.load(open('{}.p'.format(mask),'rb'))
-      path = '{}_spec1D'.format(mask)
-      os.mkdir(path)
-      nRows=len(gdict['objects'])#-1 #last row is 'trace'
-      rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
-      ids = Column(np.chararray(nRows, itemsize=20), name='id')
-      classes = Column(np.chararray(nRows, itemsize=6), name='class')
-      redshifts = Column(np.zeros(nRows), name='redshift')
-      qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
-      comments = Column(np.chararray(nRows, itemsize=100), name='comment')
-      objects = Table([rows, ids, classes, redshifts, qualities, comments])
-      objects['comment'] = 'none'
-      objects['class'] = 'galaxy'
-      objects['quality'] = -1
-      for i in range(nRows):
-         target=gdict['objects'][i]['setup']
-         spec1D=fits.getdata(target['spec1d'])
-         header=fits.getheader(target['spec1d'])
-         flux1Draw=spec1D[0,:] #No flux calibration
-         error1Draw=spec1D[1,:]
-         flux1D=spec1D[4,:] #Craptastic flux calibration
-         error1D=spec1D[5,:]
-         wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
-         if header['DC-FLAG']:
-            wave=np.power(10,wave)
-         spec = formatspectrum(wave, flux1D, error1D)
-         objID=target['object']
-         objects[i]['id'] = objID
-         if target['smf_type']=='HOLE': objects[i]['class']='star'
-         savename = getspec1Dname(mask, i+1, objID)
-         fits.writeto(savename, spec)
-      objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)
-   elif version=='cosmos':
-      print('Creating spec1D files')
-      spec1Darray = fits.getdata(mask + '_1spec.fits')
-      header1D = fits.getheader(mask + '_1spec.fits')
-      # Create wavelength array
-      wave = header1D['CRVAL1'] + np.arange(header1D['NAXIS1'])*header1D['CDELT1']
-      nRows = spec1Darray.shape[1]
-      path = '{}_spec1D'.format(mask)
-      os.mkdir(path)
+   path = '{}_spec1D'.format(mask)
+   os.mkdir(path)
 
-      rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
-      ids = Column(np.chararray(nRows, itemsize=20), name='id')
-      classes = Column(np.chararray(nRows, itemsize=6), name='class')
-      redshifts = Column(np.zeros(nRows), name='redshift')
-      qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
-      comments = Column(np.chararray(nRows, itemsize=100), name='comment')
+   # nRows=len(spec1DList)
+   nRows=len(gdict['objects'])#-1 #last row is 'trace'
+   rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
+   ids = Column(np.chararray(nRows, itemsize=20), name='id')
+   classes = Column(np.chararray(nRows, itemsize=6), name='class')
+   redshifts = Column(np.zeros(nRows), name='redshift')
+   qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
+   comments = Column(np.chararray(nRows, itemsize=100), name='comment')
+   objects = Table([rows, ids, classes, redshifts, qualities, comments])
+   objects['comment'] = 'none'
+   objects['class'] = 'galaxy'
+   objects['quality'] = -1
+
+   for i in range(nRows):
+   # for i,target in enumerate(gdict['objects']):
+      # import pdb
+      # pdb.set_trace()
+      target=gdict['objects'][i]['setup']
+      spec1D=fits.getdata(target['spec1d'])
+      header=fits.getheader(target['spec1d'])
+      # flux1D=spec1D[0,:] #No flux calibration
+      # error1D=spec1D[1,:]
+      flux1D=spec1D[4,:] #Craptastic flux calibration
+      error1D=spec1D[5,:]
+      wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
+      if header['DC-FLAG']:
+         wave=np.power(10,wave)
+
+      spec = formatspectrum(wave, flux1D, error1D)
+      # objID=spec1DList[i].split('_')[0]
+      objID=target['object']
+      # objID=objID.split('/')[1]
+      objects[i]['id'] = objID
+      if target['smf_type']=='HOLE': objects[i]['class']='star'
+      savename = getspec1Dname(mask, i+1, objID)
+      fits.writeto(savename, spec)
+   objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)
+
+
+#for cosmos output
+def createSpec1Dfiles_SDJ(mask):
+   
+   print('Creating spec1D files')
+   spec1Darray = fits.getdata(mask + '_1spec.fits')
+   header1D = fits.getheader(mask + '_1spec.fits')
+   
+   # Create wavelength array
+   wave = header1D['CRVAL1'] + np.arange(header1D['NAXIS1'])*header1D['CDELT1']
+   
+   nRows = spec1Darray.shape[1]
+   
+   path = '{}_spec1D'.format(mask)
+   os.mkdir(path)
+   
+   
+   # galaxy table
+   # row
+   # id
+   # ra
+   # dec
+   # class
+   # redshift
+   # quality
+   
+   rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
+   ids = Column(np.chararray(nRows, itemsize=20), name='id')
+   classes = Column(np.chararray(nRows, itemsize=6), name='class')
+   redshifts = Column(np.zeros(nRows), name='redshift')
+   qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
+   comments = Column(np.chararray(nRows, itemsize=100), name='comment')
+   
+   objects = Table([rows, ids, classes, redshifts, qualities, comments])
+   objects['comment'] = 'none'
+   
+   for i in range(nRows):
       
-      objects = Table([rows, ids, classes, redshifts, qualities, comments])
-      objects['comment'] = 'none'
+      flux1Draw = spec1Darray[0, i, :]
+      error1Draw = spec1Darray[1, i, :]
+      flat1D = spec1Darray[2, i, :]
+      arc1D = spec1Darray[3, i, :]
+      flux1D = spec1Darray[4, i, :]
+      error1D = spec1Darray[5, i, :]
       
-      for i in range(nRows):
-         flux1Draw = spec1Darray[0, i, :]
-         error1Draw = spec1Darray[1, i, :]
-         flat1D = spec1Darray[2, i, :]
-         arc1D = spec1Darray[3, i, :]
-         flux1D = spec1Darray[4, i, :]
-         error1D = spec1Darray[5, i, :]
-         spec = formatspectrum(wave, flux1D, error1D, 1.0, 0.0, flat1D, arc1D)
-         apnum1D = header1D['APNUM{}'.format(i+1)]
-         apnum1Darray = apnum1D.split(' ')
-         id = apnum1Darray[1]
-         savename = getspec1Dname(mask, i+1, id)
-         fits.writeto(savename, spec)
-         objects[i]['id'] = id
-         print(i+1)         
-      objects['class'] = 'galaxy'
-      objects['quality'] = -1      
-      objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)         
+      spec = formatspectrum(wave, flux1D, error1D, 1.0, 0.0, flat1D, arc1D)
+      
+      apnum1D = header1D['APNUM{}'.format(i+1)]
+      apnum1Darray = apnum1D.split(' ')
+      id = apnum1Darray[1]
+      
+      savename = getspec1Dname(mask, i+1, id)
+      fits.writeto(savename, spec)
+      
+      objects[i]['id'] = id
+
+      
+      print(i+1)
+      
+   objects['class'] = 'galaxy'
+   objects['quality'] = -1
+   
+   
+   objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)
+      
 
 
 class ldss3_redshiftgui:
    """Defining the GUI class for LDSS3 redshift assignment"""
    
-   def __init__(self, mask, xsize=1000, ysize=1000, version='carpy'):
+   def __init__(self, mask, xsize=1000, ysize=1000):
       
       self.mask = mask
       self.xsize = xsize
       self.ysize = ysize
-      self.version = version
       
       # Read in the 1d and 2d files
-      if self.version=='cosmos':
-         self.spec1Darray = fits.getdata(mask + '_1spec.fits')
-         self.header1D = fits.getheader(mask + '_1spec.fits')
-         self.spec2Darray = fits.getdata(mask + '_big.fits')
-         self.header2D = fits.getheader(mask + '_big.fits')
-            
+      # self.spec1Darray = fits.getdata(mask + '_1spec.fits')
+      # self.header1D = fits.getheader(mask + '_1spec.fits')
+      
+      # self.spec2Darray = fits.getdata(mask + '_big.fits')
+      # self.header2D = fits.getheader(mask + '_big.fits')
+      # self.spec2Darray = fits.getdata(mask + 'big.fits')
+      # self.header2D = fits.getheader(mask + 'big.fits')
+      
       path = '{}_spec1D'.format(mask)
       self.objects = Table.read('{}/{}_objects.fits'.format(path, mask))
 
@@ -220,7 +255,7 @@ class ldss3_redshiftgui:
       
       
       
-      # self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
+      self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
       
       
       
@@ -238,10 +273,6 @@ class ldss3_redshiftgui:
       self.plot_spec1D.showAxis('right')
       self.plot_spec1D.showAxis('top')
       self.plot_spec1D.setLabel('bottom', 'Wavelength [&#8491;]')
-
-      # import pdb
-      # pdb.set_trace()
-      # self.plot_spec2D.getAxis('bottom').linkToView(self.plot_spec1D.getVieWBox())
       #self.plot_spec1D.setLabel('left', 'Flux')
       
       self.mouse_x_spec1D = 0.0
@@ -251,9 +282,7 @@ class ldss3_redshiftgui:
       self.mouse_y_spec2D = 0.0
       
       # Tie the image and spectrum
-      # self.plot_spec2D.translate(4000,0)
-      # self.plot_spec2D.scale(2,1)
-      # self.plot_spec2D_view.linkView(self.plot_spec2D_view.XAxis,self.plot_spec1D.getViewBox())
+      #self.plot_spec2D_view.setXLink(self.plot_spec1D)
       
       
       # Setup the layout
@@ -452,13 +481,7 @@ class ldss3_redshiftgui:
       
       
       self.setSpec()
-
-      #Set 2D axis values to be equal to the 1D--this works so long as all spectra are the same size
-      #since it is just based on the first one read in
-      self.plot_spec2D.translate(min(self.wave),0)
-      self.plot_spec2D.scale((max(self.wave)-min(self.wave))/len(self.wave),1)
-      self.plot_spec2D_view.setXLink(self.plot_spec1D)
-
+      
       
       self.draw()
       
@@ -1416,6 +1439,9 @@ class ldss3_redshiftgui:
       low_cut=5000
       high_cut=9800
       aband=[7588,7684]
+      # import pdb
+      # pdb.set_trace()
+      # index = np.where((self.wave < low_cut))
 
       index = np.where((self.wave < low_cut) | (self.wave > high_cut)
          | ((self.wave > aband[0]) & (self.wave < aband[1])))
@@ -1535,24 +1561,25 @@ class ldss3_redshiftgui:
        
     
        
-   #This is now obsolete since the axes are linked
+       
    def updateXrange_1D(self):
-     pass 
-      # xRange = self.plot_spec1D.getViewBox().state['viewRange'][0]
-      # x0 = xRange[0]
-      # x1 = xRange[1]
+   
       
-      # # Interpolate wavelength to index very inefficient way to do this but I am lazy
-      # indexes = np.arange(len(self.wave))
-      # indexes_interp = interp1d(self.wave, indexes, bounds_error=False, fill_value='extrapolate')
-      # index0 = indexes_interp(x0)
-      # index1 = indexes_interp(x1)
+      xRange = self.plot_spec1D.getViewBox().state['viewRange'][0]
+      x0 = xRange[0]
+      x1 = xRange[1]
       
-      # #index = np.where((self.wave > x0) & (self.wave < x1))[0]
-      # #if len(index) > 0:
-      # #index0 = np.min(index)
-      # #index1 = np.max(index)
-      # self.plot_spec2D_view.setXRange(index0, index1, padding=0.035)      
+      # Interpolate wavelength to index very inefficient way to do this but I am lazy
+      indexes = np.arange(len(self.wave))
+      indexes_interp = interp1d(self.wave, indexes, bounds_error=False, fill_value='extrapolate')
+      index0 = indexes_interp(x0)
+      index1 = indexes_interp(x1)
+      
+      #index = np.where((self.wave > x0) & (self.wave < x1))[0]
+      #if len(index) > 0:
+      #index0 = np.min(index)
+      #index1 = np.max(index)
+      self.plot_spec2D_view.setXRange(index0, index1, padding=0.035)      
    
    
    def advance(self, delt):
@@ -1572,25 +1599,26 @@ class ldss3_redshiftgui:
       
    def setSpec(self, autoRange=True):
       """Set the spectrum to current row"""
-                  
+      
+      # Get the apnum header parameter
+      # self.apnum1D = self.header1D['APNUM{}'.format(self.row)]
+      # self.apnum2D = self.header2D['APNUM{}'.format(self.row)]
+      # self.apnum1Darray = self.apnum1D.split(' ')
+      # self.apnum2Darray = self.apnum2D.split(' ')
+
+
+      # self.id = self.apnum1Darray[1]
+      self.id=self.objects[self.row-1]['id']
+      # self.y0=int(self.header2D['CSECT{}A'.format(self.row)])
+      # self.y1=int(self.header2D['CSECT{}B'.format(self.row)])
+      # import pdb
+      # pdb.set_trace()
+      # self.y0 = int(float(self.apnum2Darray[2]))
+      # self.y1 = int(float(self.apnum2Darray[3]))
+      
+      
       self.z = self.objects[self.row-1]['redshift']
       self.comment_text.setText(self.objects[self.row-1]['comment'])
-
-      if self.version=='carpy':
-         self.id=self.objects[self.row-1]['id']
-         self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
-      elif self.version=='cosmos':
-         # Get the apnum header parameter
-         self.apnum1D = self.header1D['APNUM{}'.format(self.row)]
-         self.apnum2D = self.header2D['APNUM{}'.format(self.row)]
-         self.apnum1Darray = self.apnum1D.split(' ')
-         self.apnum2Darray = self.apnum2D.split(' ')
-         self.id = self.apnum1Darray[1]
-         self.y0=int(self.header2D['CSECT{}A'.format(self.row)])
-         self.y1=int(self.header2D['CSECT{}B'.format(self.row)])
-         self.y0 = int(float(self.apnum2Darray[2]))
-         self.y1 = int(float(self.apnum2Darray[3]))
-         self.flux2D = self.spec2Darray[self.y0:self.y1, :].transpose()
       
       self.spec = fits.getdata(getspec1Dname(self.mask, self.row, self.id))
       
@@ -1600,7 +1628,10 @@ class ldss3_redshiftgui:
       self.model1D = self.spec['model']
       self.flat1D = self.spec['flat']
       self.arc1D = self.spec['arc']
-     
+      #TJC
+      self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
+      # self.flux2D = self.spec2Darray[self.y0:self.y1, :].transpose()
+      
       self.smoothSpec()
       
       # Check for redshift filename and read in if present.
@@ -1741,15 +1772,16 @@ parser = argparse.ArgumentParser(description='Verify foreground/background quasa
 parser.add_argument('-m', metavar='mask name', type=str, help='name of the mask to be redshifted', required=True)
 parser.add_argument('-xsize', metavar='xsize', type=int, help='xsize in pixels', default=2500)
 parser.add_argument('-ysize', metavar='ysize', type=int, help='ysize in pixels', default=1500)
-parser.add_argument('-v', metavar='version', type=str, help='input version (cosmos/carpy)', default='carpy')
 args = parser.parse_args()
 
 # Check for the 1d spectrum files.
 if not os.path.isdir('{}_spec1D'.format(args.m)):
    print('Creating 1D spectrum files')
-   createSpec1Dfiles(args.m,args.v)
+   createSpec1Dfiles(args.m)
      
 else:
    print('1D spectrum files already present.')
-      
-redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
+   
+   
+
+redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize)
