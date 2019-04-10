@@ -220,7 +220,7 @@ class ldss3_redshiftgui:
       
       
       
-      # self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
+      self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
       
       
       
@@ -238,10 +238,6 @@ class ldss3_redshiftgui:
       self.plot_spec1D.showAxis('right')
       self.plot_spec1D.showAxis('top')
       self.plot_spec1D.setLabel('bottom', 'Wavelength [&#8491;]')
-
-      # import pdb
-      # pdb.set_trace()
-      # self.plot_spec2D.getAxis('bottom').linkToView(self.plot_spec1D.getVieWBox())
       #self.plot_spec1D.setLabel('left', 'Flux')
       
       self.mouse_x_spec1D = 0.0
@@ -251,9 +247,7 @@ class ldss3_redshiftgui:
       self.mouse_y_spec2D = 0.0
       
       # Tie the image and spectrum
-      # self.plot_spec2D.translate(4000,0)
-      # self.plot_spec2D.scale(2,1)
-      # self.plot_spec2D_view.linkView(self.plot_spec2D_view.XAxis,self.plot_spec1D.getViewBox())
+      #self.plot_spec2D_view.setXLink(self.plot_spec1D)
       
       
       # Setup the layout
@@ -452,13 +446,7 @@ class ldss3_redshiftgui:
       
       
       self.setSpec()
-
-      #Set 2D axis values to be equal to the 1D--this works so long as all spectra are the same size
-      #since it is just based on the first one read in
-      self.plot_spec2D.translate(min(self.wave),0)
-      self.plot_spec2D.scale((max(self.wave)-min(self.wave))/len(self.wave),1)
-      self.plot_spec2D_view.setXLink(self.plot_spec1D)
-
+      
       
       self.draw()
       
@@ -1416,6 +1404,9 @@ class ldss3_redshiftgui:
       low_cut=5000
       high_cut=9800
       aband=[7588,7684]
+      # import pdb
+      # pdb.set_trace()
+      # index = np.where((self.wave < low_cut))
 
       index = np.where((self.wave < low_cut) | (self.wave > high_cut)
          | ((self.wave > aband[0]) & (self.wave < aband[1])))
@@ -1535,24 +1526,25 @@ class ldss3_redshiftgui:
        
     
        
-   #This is now obsolete since the axes are linked
+       
    def updateXrange_1D(self):
-     pass 
-      # xRange = self.plot_spec1D.getViewBox().state['viewRange'][0]
-      # x0 = xRange[0]
-      # x1 = xRange[1]
+   
       
-      # # Interpolate wavelength to index very inefficient way to do this but I am lazy
-      # indexes = np.arange(len(self.wave))
-      # indexes_interp = interp1d(self.wave, indexes, bounds_error=False, fill_value='extrapolate')
-      # index0 = indexes_interp(x0)
-      # index1 = indexes_interp(x1)
+      xRange = self.plot_spec1D.getViewBox().state['viewRange'][0]
+      x0 = xRange[0]
+      x1 = xRange[1]
       
-      # #index = np.where((self.wave > x0) & (self.wave < x1))[0]
-      # #if len(index) > 0:
-      # #index0 = np.min(index)
-      # #index1 = np.max(index)
-      # self.plot_spec2D_view.setXRange(index0, index1, padding=0.035)      
+      # Interpolate wavelength to index very inefficient way to do this but I am lazy
+      indexes = np.arange(len(self.wave))
+      indexes_interp = interp1d(self.wave, indexes, bounds_error=False, fill_value='extrapolate')
+      index0 = indexes_interp(x0)
+      index1 = indexes_interp(x1)
+      
+      #index = np.where((self.wave > x0) & (self.wave < x1))[0]
+      #if len(index) > 0:
+      #index0 = np.min(index)
+      #index1 = np.max(index)
+      self.plot_spec2D_view.setXRange(index0, index1, padding=0.035)      
    
    
    def advance(self, delt):
