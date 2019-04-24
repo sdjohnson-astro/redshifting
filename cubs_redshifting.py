@@ -17,31 +17,33 @@ import redshift
 
 
 
-def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0):
+def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,raw=0.0,rawerr=0.0):
       spec = np.zeros(len(flux),
                             dtype={'names':('wave', 'flux', 'error',
-                                             'mask', 'model', 'flat', 'arc'), 
+                                             'mask', 'model', 'flat', 'arc', 'raw', 'rawerr'), 
                                    'formats':(float, float, float, float, float,
-                                              float, float)})
-      spec['wave'] = 0.0
-      spec['flux'] = 0.0
-      spec['error'] = 0.0
-      spec['mask'] = 1
-      spec['model'] = 0.0
-      spec['flat'] = 0.0
-      spec['arc'] = 0.0  
-      
+                                              float, float,float,float)})
+      # spec['wave'] = 0.0
+      # spec['flux'] = 0.0
+      # spec['error'] = 0.0
+      # spec['mask'] = 1
+      # spec['model'] = 0.0
+      # spec['flat'] = 0.0
+      # spec['arc'] = 0.0  
+
       spec['wave'] = wave
       spec['flux'] = flux
       spec['error'] = error
       spec['model'] = model
+      spec['mask'] = mask
       spec['flat'] = flat
       spec['arc'] = arc
+      spec['raw'] = raw
+      spec['rawerr'] = rawerr
       
       
-      
-      spec['flux'][~np.isfinite(spec['flux'])] = 0.0
       spec['error'][~np.isfinite(spec['flux'])] = 0.0
+      spec['flux'][~np.isfinite(spec['flux'])] = 0.0
       spec['flux'][~np.isfinite(spec['error'])] = 0.0
       spec['error'][~np.isfinite(spec['error'])] = 0.0
       
@@ -66,26 +68,34 @@ def createSpec1Dfiles(mask,version='carpy'):
    print('Creating spec1D files')
 
    if version=='carpy':
-      try: #Stupid Python 2/3 compatibility
-         import cPickle as pickle
-      except:
-         import pickle
-      gdict=pickle.load(open('{}.p'.format(mask),'rb'))
+      # try: #Stupid Python 2/3 compatibility
+         # import cPickle as pickle
+      # except:
+         # import pickle
+      # gdict=pickle.load(open('{}.p'.format(mask),'rb'))
+      maskinfo=Table.read('{}/{}_maskinfo.fits'.format(mask,mask))
       path = '{}_spec1D'.format(mask)
       os.mkdir(path)
-      nRows=len(gdict['objects'])#-1 #last row is 'trace'
+      # nRows=len(gdict['objects'])#-1 #last row is 'trace'
+      nRows=len(maskinfo)#-1 #last row is 'trace'
       rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
       ids = Column(np.chararray(nRows, itemsize=20), name='id')
       classes = Column(np.chararray(nRows, itemsize=6), name='class')
       redshifts = Column(np.zeros(nRows), name='redshift')
       qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
       comments = Column(np.chararray(nRows, itemsize=100), name='comment')
-      objects = Table([rows, ids, classes, redshifts, qualities, comments])
+      extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
+      extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
+      extflag = Column(np.zeros(nRows,dtype='int'), name='extflag')
+      boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
+
+      objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag,boxes])
       objects['comment'] = 'none'
       objects['class'] = 'galaxy'
       objects['quality'] = -1
-      for i in range(nRows):
-         target=gdict['objects'][i]['setup']
+      # for i in range(nRows):
+      for i,target in enumerate(maskinfo):
+         # target=gdict['objects'][i]['setup']
          spec1D=fits.getdata(target['spec1d'])
          header=fits.getheader(target['spec1d'])
          flux1Draw=spec1D[0,:] #No flux calibration
@@ -95,10 +105,15 @@ def createSpec1Dfiles(mask,version='carpy'):
          wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
          if header['DC-FLAG']:
             wave=np.power(10,wave)
-         spec = formatspectrum(wave, flux1D, error1D)
+         spec = formatspectrum(wave, flux1D, error1D,raw=flux1Draw,rawerr=error1Draw)
          objID=target['object']
          objects[i]['id'] = objID
-         if target['smf_type']=='HOLE': objects[i]['class']='star'
+         if target['smf_type']=='HOLE': 
+            objects[i]['class']='star'
+            objects[i]['alignbox']=True
+         objects[i]['extpos']=header['EXTRPOS']
+         objects[i]['extaper']=header['APER']
+
          savename = getspec1Dname(mask, i+1, objID)
          fits.writeto(savename, spec)
       objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)
@@ -118,8 +133,13 @@ def createSpec1Dfiles(mask,version='carpy'):
       redshifts = Column(np.zeros(nRows), name='redshift')
       qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
       comments = Column(np.chararray(nRows, itemsize=100), name='comment')
-      
-      objects = Table([rows, ids, classes, redshifts, qualities, comments])
+      #Things below here are just included for consistency with the carpy format...
+      extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
+      extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
+      extflag = Column(np.zeros(nRows,dtype='int'), name='extflag')
+      boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
+      # objects = Table([rows, ids, classes, redshifts, qualities, comments])
+      objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag])
       objects['comment'] = 'none'
       
       for i in range(nRows):
@@ -138,7 +158,7 @@ def createSpec1Dfiles(mask,version='carpy'):
          objects[i]['id'] = id
          print(i+1)         
       objects['class'] = 'galaxy'
-      objects['quality'] = -1      
+      objects['quality'] = -1  
       objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)         
 
 
@@ -151,6 +171,15 @@ class ldss3_redshiftgui:
       self.xsize = xsize
       self.ysize = ysize
       self.version = version
+      #Read in the extraction profile for CarPy version
+      if self.version=='carpy':
+         try:
+            # import pickle
+            # gdict=pickle.load(open('{}.p'.format(mask),'rb'))
+            # self.exttrace=gdict['trace'][0]
+            self.exttrace=fits.getdata('{}/{}_trace.fits'.format(mask,mask))
+         except:
+            print 'Couldn\'t read extraction trace file'
       
       # Read in the 1d and 2d files
       if self.version=='cosmos':
@@ -211,13 +240,13 @@ class ldss3_redshiftgui:
       #self.plot_spec2D = pg.ImageView()
       #self.plot_spec2D.removeItem(self.plot_spec2D.getHistogramWidget())
       self.plot_spec2D_win = pg.GraphicsLayoutWidget()
-      self.plot_spec2D_view = self.plot_spec2D_win.addViewBox()
+      # self.plot_spec2D_view = self.plot_spec2D_win.addViewBox()
+      self.plot_spec2D_plot = self.plot_spec2D_win.addPlot()      
       self.plot_spec2D = pg.ImageItem(border='w')
-      self.plot_spec2D_view.addItem(self.plot_spec2D)
-      self.plot_spec2D_view.setMouseEnabled(x=False, y=False)
+      self.plot_spec2D_plot.addItem(self.plot_spec2D)
+      self.plot_spec2D_plot.setMouseEnabled(x=False, y=False)
       self.plot_spec2D_hist = pg.HistogramLUTWidget()
       self.plot_spec2D_hist.setImageItem(self.plot_spec2D)
-      
       
       
       # self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
@@ -239,8 +268,6 @@ class ldss3_redshiftgui:
       self.plot_spec1D.showAxis('top')
       self.plot_spec1D.setLabel('bottom', 'Wavelength [&#8491;]')
 
-      # import pdb
-      # pdb.set_trace()
       # self.plot_spec2D.getAxis('bottom').linkToView(self.plot_spec1D.getVieWBox())
       #self.plot_spec1D.setLabel('left', 'Flux')
       
@@ -398,17 +425,28 @@ class ldss3_redshiftgui:
       
       self.paramSpec = [
               dict(name='Show lines', type='bool', value=True),
+              dict(name='Show trace', type='bool', value=True),
+              dict(name='Show raw', type='bool', value=False),
               dict(name='row:', type='str', value='', readonly=True),
               dict(name='id:', type='str', value='', readonly=True), 
               dict(name='class:', type='str', value='', readonly=True), 
               dict(name='z=', type='str', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
-              dict(name='quality:', type='str', value='', readonly=True)
+              dict(name='quality:', type='str', value='', readonly=True),
+              dict(name='extflag:', type='str', value=0, readonly=True)
+
+
+              # dict(name='extraction center:', type='str', value='', readonly=True)
+              # dict(name='extraction aper:', type='str', value='', readonly=True)
            ]
            
       self.param = pt.Parameter.create(name='Options', type='group', children=self.paramSpec)
+      #Redraw when the boolean option buttons are pressed
+      self.param.children()[0].sigValueChanged.connect(self.draw)
+      self.param.children()[1].sigValueChanged.connect(self.draw)
+      self.param.children()[2].sigValueChanged.connect(self.draw)
       self.tree = pt.ParameterTree()
       self.tree.setParameters(self.param)
-      
+
       
       self.features = Table.read(os.environ['REDSHIFTING'] + '/redshiftLines.dat', format='ascii')
       
@@ -453,11 +491,11 @@ class ldss3_redshiftgui:
       
       self.setSpec()
 
-      #Set 2D axis values to be equal to the 1D--this works so long as all spectra are the same size
+      #Set 2D X-axis values to be equal to the 1D--this works so long as all spectra are the same size
       #since it is just based on the first one read in
       self.plot_spec2D.translate(min(self.wave),0)
       self.plot_spec2D.scale((max(self.wave)-min(self.wave))/len(self.wave),1)
-      self.plot_spec2D_view.setXLink(self.plot_spec1D)
+      self.plot_spec2D_plot.setXLink(self.plot_spec1D)
 
       
       self.draw()
@@ -732,9 +770,13 @@ class ldss3_redshiftgui:
       
       self.draw()
       #self.setTable()
-         
 
-   
+   def setExtFlag(self):
+      eflag=1-self.objects[self.row-1]['extflag']
+      self.objects[self.row-1]['extflag']=eflag
+      self.param['extflag:']=eflag
+      self.draw()
+      
    def keypress_redshift(self, event):
       
       if self.plot_redshift_current: 
@@ -882,8 +924,7 @@ class ldss3_redshiftgui:
          # Right arrow   
          if event.key() == 16777236:
             
-            self.incrementRedshift(+1)
-            
+            self.incrementRedshift(+1)            
             
    def zoomxy_redshift(self, scalex, scaley):
       """Zoom in or out in wavelength (x) and/or flux (y)"""
@@ -1073,6 +1114,10 @@ class ldss3_redshiftgui:
          if (event.text() == 'f') | (event.text() == 'F'):
             
             self.setQuality(-1)
+
+         if (event.text() == 'c') & (self.version=='carpy'):
+            
+            self.setExtFlag()
             
          if event.text() == ';':
             
@@ -1596,11 +1641,15 @@ class ldss3_redshiftgui:
       
       self.wave = self.spec['wave']
       self.flux1D = self.spec['flux']
+      self.flux1Draw = self.spec['raw']
       self.error1D = self.spec['error']
+      self.error1Draw=self.spec['rawerr']
       self.model1D = self.spec['model']
       self.flat1D = self.spec['flat']
       self.arc1D = self.spec['arc']
-     
+
+      self.extpos = self.objects[self.row-1]['extpos']
+      self.extaper = self.objects[self.row-1]['extaper']
       self.smoothSpec()
       
       # Check for redshift filename and read in if present.
@@ -1622,17 +1671,13 @@ class ldss3_redshiftgui:
          self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
          self.updateXrange_1D()
       
-
-      
       self.param['row:'] =  '{}/{}'.format(self.row, self.nRows)
       self.param['id:'] =  '{}'.format(self.objects[self.row-1]['id'])
       self.param['class:'] =  '{}'.format(self.objects[self.row-1]['class'])
       self.param['z='] =  '{:0.5f}'.format(self.objects[self.row-1]['redshift'])
       self.param['quality:'] =  '{}'.format(self.objects[self.row-1]['quality'])
-      
-      
-      
-      
+      self.param['extflag:'] =  '{}'.format(self.objects[self.row-1]['extflag'])
+
       
    def mouseMoved_redshift(self, pos):
        """Keep track of where the mouse and update the xrange on the 2D plot to match the 1D"""
@@ -1673,13 +1718,15 @@ class ldss3_redshiftgui:
          self.plot_redshift.addItem(pg.InfiniteLine(self.z,
                                   pen=pg.mkPen('r', width=2, style=QtCore.Qt.DotLine)))
       
-      
       self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
                         pen=pg.mkPen('w', width=2), clear=True)
       self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
                         pen=pg.mkPen('b', width=2))
       self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
                         pen=pg.mkPen('r', width=2))
+      if self.param['Show raw']:
+         self.plot_spec1D.plot(self.wave, self.flux1Draw*self.spec['mask'], 
+            pen=pg.mkPen('w', width=1,style=QtCore.Qt.DotLine))
       #self.plot_spec1D.setYRange(np.percentile(self.flux1D, [5]),
       #                         np.percentile(self.flux1D, [99.9]),
       #                         padding=0)
@@ -1725,16 +1772,26 @@ class ldss3_redshiftgui:
                self.plot_spec1D.addItem(pg.InfiniteLine(feature['wave']*(1 + self.z),
                                         pen=pg.mkPen('y', width=2, style=QtCore.Qt.DotLine),
                                         label='{} {:0.1f}'.format(feature['name'], feature['wave']),
-                                        labelOpts={'position':0.8, 'rotateAxis':[1, 0]}))
-                        
+                                        labelOpts={'position':0.8, 'rotateAxis':[1, 0]}))                        
          
+      # self.plot_spec2D_view.addItem(self.plot_spec2D)
+
       # 2D spectrum
+
       self.plot_spec2D.setImage(self.flux2D, xvals=self.wave, 
                                 levels=np.percentile(self.flux2D, [5, 99.5]), 
                                 border=pg.mkPen('w', width=2))
       
-      
-      
+      if self.version=='carpy':
+         try: #need to remove those lines if they are there already...
+            map(self.plot_spec2D_plot.removeItem,[self.ext1,self.ext2,self.ext3])
+         except:
+            pass
+         if self.param['Show trace']:
+            pen=pg.mkPen('r',width=2,style=QtCore.Qt.DashLine)
+            self.ext1=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace,pen=pen)
+            self.ext2=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace+self.extaper/2,pen=pen)
+            self.ext3=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace-self.extaper/2,pen=pen)
 
 # Set up the command line argument parser
 parser = argparse.ArgumentParser(description='Verify foreground/background quasars and measure absorbing gas around the foreground in the background quasar spectrum')
