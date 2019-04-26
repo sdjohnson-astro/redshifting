@@ -86,7 +86,7 @@ def createSpec1Dfiles(mask,version='carpy'):
       comments = Column(np.chararray(nRows, itemsize=100), name='comment')
       extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
       extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
-      extflag = Column(np.zeros(nRows,dtype='int'), name='extflag')
+      extflag = Column(np.zeros(nRows,dtype=bool), name='extflag')
       boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
 
       objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag,boxes])
@@ -136,7 +136,7 @@ def createSpec1Dfiles(mask,version='carpy'):
       #Things below here are just included for consistency with the carpy format...
       extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
       extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
-      extflag = Column(np.zeros(nRows,dtype='int'), name='extflag')
+      extflag = Column(np.zeros(nRows,dtype=bool), name='extflag')
       boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
       # objects = Table([rows, ids, classes, redshifts, qualities, comments])
       objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag])
@@ -432,7 +432,7 @@ class ldss3_redshiftgui:
               dict(name='class:', type='str', value='', readonly=True), 
               dict(name='z=', type='str', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
               dict(name='quality:', type='str', value='', readonly=True),
-              dict(name='extflag:', type='str', value=0, readonly=True)
+              dict(name='Bad Extraction:', type='bool', value=False)
 
 
               # dict(name='extraction center:', type='str', value='', readonly=True)
@@ -444,6 +444,7 @@ class ldss3_redshiftgui:
       self.param.children()[0].sigValueChanged.connect(self.draw)
       self.param.children()[1].sigValueChanged.connect(self.draw)
       self.param.children()[2].sigValueChanged.connect(self.draw)
+      self.param.children()[8].sigValueChanged.connect(self.setExtFlag)
       self.tree = pt.ParameterTree()
       self.tree.setParameters(self.param)
 
@@ -511,7 +512,7 @@ class ldss3_redshiftgui:
    
    def setTable(self):
       
-      self.objectsTable.setData(np.array(self.objects['row', 'id', 'class', 'redshift', 'quality', 'comment']))
+      self.objectsTable.setData(np.array(self.objects['row', 'id', 'class', 'redshift', 'quality', 'comment','extflag']))
    
    def goToObject(self):
       
@@ -772,10 +773,9 @@ class ldss3_redshiftgui:
       #self.setTable()
 
    def setExtFlag(self):
-      eflag=1-self.objects[self.row-1]['extflag']
-      self.objects[self.row-1]['extflag']=eflag
-      self.param['extflag:']=eflag
-      self.draw()
+    
+      self.objects[self.row-1]['extflag']=self.param['Bad Extraction:']
+      self.save()
       
    def keypress_redshift(self, event):
       
@@ -1115,9 +1115,9 @@ class ldss3_redshiftgui:
             
             self.setQuality(-1)
 
-         if (event.text() == 'c') & (self.version=='carpy'):
+         # if (event.text() == 'c') & (self.version=='carpy'):
             
-            self.setExtFlag()
+            # self.setExtFlag()
             
          if event.text() == ';':
             
@@ -1676,7 +1676,7 @@ class ldss3_redshiftgui:
       self.param['class:'] =  '{}'.format(self.objects[self.row-1]['class'])
       self.param['z='] =  '{:0.5f}'.format(self.objects[self.row-1]['redshift'])
       self.param['quality:'] =  '{}'.format(self.objects[self.row-1]['quality'])
-      self.param['extflag:'] =  '{}'.format(self.objects[self.row-1]['extflag'])
+      self.param['Bad Extraction:'] =  bool(self.objects[self.row-1]['extflag'])
 
       
    def mouseMoved_redshift(self, pos):
