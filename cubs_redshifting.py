@@ -13,6 +13,7 @@ import glob
 import argparse
 import pyqtgraph.parametertree as pt
 import redshift
+import shutil
 
 
 
@@ -512,7 +513,7 @@ class ldss3_redshiftgui:
    
    def setTable(self):
       
-      self.objectsTable.setData(np.array(self.objects['row', 'id', 'class', 'redshift', 'quality', 'comment','extflag']))
+      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'extflag','row','comment']))
    
    def goToObject(self):
       
@@ -1229,7 +1230,7 @@ class ldss3_redshiftgui:
             
             self.setRedshiftMgII2799()
             
-         if event.text() == 'z':
+         if event.text() == 'r':
             
             self.fitObjectAtRedshift()
             
@@ -1253,11 +1254,16 @@ class ldss3_redshiftgui:
       
       # Start at row 1
       for object in self.objects:
-         
+         # if it already has a redshift:
+            # continue
          self.row = object['row']
          self.setSpec()
-         self.redshiftObject()
-         print('{}/{}   {}   z_best={:0.4f}'.format(self.row, self.nRows, object['class'], object['redshift']))
+         if self.redshifted:
+            print('{}/{}   {}  already redshifted. Skipping'.format(self.row, self.nRows, object['class']))
+         else:
+            self.autoMask()            
+            self.redshiftObject()
+            print('{}/{}   {}   z_best={:0.4f}'.format(self.row, self.nRows, object['class'], object['redshift']))
          
       
    
@@ -1285,6 +1291,7 @@ class ldss3_redshiftgui:
          spec['model'] = model
          
          
+      print('Redshift assigned by hand {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
       
       self.objects[self.row-1]['redshift'] = z
@@ -1348,6 +1355,7 @@ class ldss3_redshiftgui:
          redshifts.sort('z')
          self.redshifts = redshifts
          
+      print('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
       self.z = z      
       self.save()
@@ -1807,6 +1815,7 @@ if not os.path.isdir('{}_spec1D'.format(args.m)):
    createSpec1Dfiles(args.m,args.v)
      
 else:
-   print('1D spectrum files already present.')
+   print('1D spectrum files already present. Copying objects file to backup')
+   shutil.copy('{}_spec1D/{}_objects.fits'.format(args.m,args.m),'{}_spec1D/{}_objects_bkp.fits'.format(args.m,args.m))
       
 redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
