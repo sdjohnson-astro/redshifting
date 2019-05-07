@@ -518,7 +518,7 @@ class ldss3_redshiftgui:
    def goToObject(self):
       
       #print('Going to object...')
-      self.row = int(self.objectsTable.selectedItems()[0].data(0))
+      self.row = self.objectsTable.selectedItems()[0].row()+1
       self.setSpec()
       self.draw()
       
