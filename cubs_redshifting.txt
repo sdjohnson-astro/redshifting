@@ -1,14 +1,15 @@
 Usage:
 
 Basic Usage:
-1) In terminal, run
+1) In terminal, run (one directory up from directory with the name of the mask that contains lots of *sum.fits files)
         cubs_redhisfting.py -m MASKNAME (-v cosmos)
     The COSMOS and CarPy pipelines produce slightly different output formats--defaults to reading in CarPy, use -v cosmos if using COSMOS output.
-    This should make a new directory (MASKNAME_spec1D) where spectra reformatted for this program and metadata are stored.
+    This should make a new directory (MASKNAME_spec1D) where spectra reformatted for this program and redshift data are stored.
 2) For each object
     - press 'M' to mask wavelengths at x>5000, x<9800, and the A band (~7600). These can be unmasked, but they are often very noisy, have bad flux calibration, and can mislead the PCA/chi-2 fitting.
     - press 'r' to determine the best fitting redshift.
     - press 'a/s/d/f' to assigned a quality of (a)wesome=2, (s)ingle-line=1, (d)amn=0, or (f)'ed=-1
+    - If the extraction is bad (or maybe if there are 2 objects) tick the corresponding checkbox.
 3) If the initial redshifting didn't work, you can:
     -mask/unmask regions of the spectrum with 'm' and 'u'. Cosmic rays will often need to be masked--CarPy does a weighted sum and attempts to filter out cosmics, but isn't always successful at that, especailly around dense skylines regions.
     -Choose a different redshift in the 'redshift' plot at the top with 'z', then run a local redshift minimization with 'l'
@@ -22,6 +23,7 @@ z: manually assign local redshift
 
 spec1D window keystrokes:
 
+Enter/return:    save
 n :              advance +1 to next object
 N :              advance +10 objects
 b :              advance -1 to previous object
@@ -52,6 +54,7 @@ a/A :            set redshift quality to robust
 s/S :            set redshift quality to single-line
 d/D :            set redshift quality to damn no redshift
 f/F :            set redshift quality to WTF?
+e   :            flip extraction flag (0 is good, 1 is bad)
 
 R :              redshift all objects over detault range with current classification
 r :              redshift this object over default range with current classification
@@ -89,21 +92,12 @@ $ CaII H setRedshiftCaIIH3969
 
 
 q
-s
 e
 t
 y
 i
 o
 p
-a
-d
-f
-h
-j
-k
-l
 z
 x
-c
 v
