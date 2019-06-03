@@ -1805,4 +1805,4 @@ else:
    print('1D spectrum files already present. Copying objects file to backup')
    shutil.copy('{}_spec1D/{}_objects.fits'.format(args.m,args.m),'{}_spec1D/{}_objects_bkp.fits'.format(args.m,args.m))
       
-# redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
+redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
