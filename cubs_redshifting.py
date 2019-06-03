@@ -97,24 +97,28 @@ def createSpec1Dfiles(mask,version='carpy'):
       # for i in range(nRows):
       for i,target in enumerate(maskinfo):
          # target=gdict['objects'][i]['setup']
-         spec1D=fits.getdata(target['spec1d'])
-         header=fits.getheader(target['spec1d'])
-         flux1Draw=spec1D[0,:] #No flux calibration
-         error1Draw=spec1D[1,:]
-         flux1D=spec1D[4,:] #Craptastic flux calibration
-         error1D=spec1D[5,:]
-         wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
-         if header['DC-FLAG']:
-            wave=np.power(10,wave)
-         spec = formatspectrum(wave, flux1D, error1D,raw=flux1Draw,rawerr=error1Draw)
-         objID=target['object']
-         objects[i]['id'] = objID
-         if target['smf_type']=='HOLE': 
-            objects[i]['class']='star'
-            objects[i]['alignbox']=True
-         objects[i]['extpos']=header['EXTRPOS']
-         objects[i]['extaper']=header['APER']
-
+         if os.path.isfile(target['spec1d']):
+            spec1D=fits.getdata(target['spec1d'])
+            header=fits.getheader(target['spec1d'])
+            flux1Draw=spec1D[0,:] #No flux calibration
+            error1Draw=spec1D[1,:]
+            flux1D=spec1D[4,:] #Craptastic flux calibration
+            error1D=spec1D[5,:]
+            wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
+            if header['DC-FLAG']:
+               wave=np.power(10,wave)
+            spec = formatspectrum(wave, flux1D, error1D,raw=flux1Draw,rawerr=error1Draw)
+            objID=target['object']
+            objects[i]['id'] = objID
+            if target['smf_type']=='HOLE': 
+               objects[i]['class']='star'
+               objects[i]['alignbox']=True
+            objects[i]['extpos']=header['EXTRPOS']
+            objects[i]['extaper']=header['APER']
+         else:
+            print 'File is missing: {}'.format(target['spec1d'])
+            objects[i]['id']=target['object']
+            continue
          savename = getspec1Dname(mask, i+1, objID)
          fits.writeto(savename, spec)
       objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)
@@ -509,8 +513,7 @@ class ldss3_redshiftgui:
    def updateComment(self, event):
       
       self.objects[self.row-1]['comment'] = self.comment_text.text()
-      #self.setTable()
-   
+         
    def setTable(self):
       
       self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'extflag','row','comment']))
@@ -521,7 +524,7 @@ class ldss3_redshiftgui:
       self.row = self.objectsTable.selectedItems()[0].row()+1
       self.setSpec()
       self.draw()
-      
+      # self.objectsTable.
    
    def setRedshiftOVI1033(self):
          wave0 = 1033.82
@@ -529,8 +532,7 @@ class ldss3_redshiftgui:
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-   
+            
    
    def setRedshiftHI1215(self):
          wave0 = 1215.24
@@ -538,232 +540,203 @@ class ldss3_redshiftgui:
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftNV1240(self):
          wave0 = 1240.81
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftCIV1549(self):
          wave0 = 1549.48
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOIII1665(self):
          wave0 = 1665.85
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-   
+            
    def setRedshiftCIII1908(self):
          wave0 = 1908.734
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftMgII2799(self):
          wave0 = 2799.117
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOII3728(self):
          wave0 = 3728.60
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftCaIIK3934(self):
          wave0 = 3934.777
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftCaIIH3969(self):
          wave0 = 3969.588
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftHd4102(self):
          wave0 = 4102.89
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftGband4305(self):
          wave0 = 4305.61
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftHg4341(self):
          wave0 = 4341.68
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOIII4364(self):
          wave0 = 4364.436
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftHb4862(self):
          wave0 = 4862.68
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOIII4960(self):
          wave0 = 4960.295
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOIII5008(self):
          wave0 = 5008.240
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftMgI5176(self):
          wave0 = 5176.7
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftNaI5895(self):
          wave0 = 5895.6
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOI6302(self):
          wave0 = 6302.046
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftOI6365(self):
          wave0 = 6365.536
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftNII6549(self):
          wave0 = 6549.86
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftHa6564(self):
          wave0 = 6564.61
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftNII6585(self):
          wave0 = 6585.27
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftSII6718(self):
          wave0 = 6718.29
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftSII6732(self):
          wave0 = 6732.67
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftCaII8500(self):
          wave0 = 8500.36
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftCaII8544(self):
          wave0 = 8544.44
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    def setRedshiftCaII8664(self):
          wave0 = 8664.52
          self.z = self.mouse_x_spec1D/wave0 - 1
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
-         #self.setTable()
-         
+                  
    
    def setClass(self, classification):
          self.objects[self.row-1]['class'] = classification
          self.param['class:'] =  classification
          
          self.draw()
-         #self.setTable()
-      
+               
 
    def setQuality(self, quality):
       
@@ -771,8 +744,7 @@ class ldss3_redshiftgui:
       self.param['quality:'] =  quality
       
       self.draw()
-      #self.setTable()
-
+      
    def setExtFlag(self):
     
       self.objects[self.row-1]['extflag']=self.param['Bad Extraction:']
@@ -840,8 +812,7 @@ class ldss3_redshiftgui:
             
             self.draw()
             
-            #self.setTable()
-            
+                        
          if (event.text() == 'h') | (event.text() == 'H'):
             
             self.setClass('star')
@@ -1248,8 +1219,7 @@ class ldss3_redshiftgui:
       self.objects[self.row-1]['redshift'] = self.z
       self.param['z='] =  '{:0.5f}'.format(self.z)
       self.draw()
-      #self.setTable()
-   
+         
    def redshiftAll(self):
       
       # Start at row 1
@@ -1299,7 +1269,6 @@ class ldss3_redshiftgui:
       #self.redshifts = Table(redshifts)
       self.save()
       #self.setSpec()
-      #self.setTable()
       self.draw()      
    
    
@@ -1444,14 +1413,12 @@ class ldss3_redshiftgui:
    def save(self):
       
       self.setTable()
-      
+# 
       path = '{}_spec1D'.format(self.mask)
-      
-      
-      
-      savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
+      if os.path.isfile(path):
+         savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
                                self.objects[self.row-1]['id'])
-      fits.writeto(savename, self.spec, overwrite=True)
+         fits.writeto(savename, self.spec, overwrite=True)
       
       self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
       
@@ -1610,7 +1577,7 @@ class ldss3_redshiftgui:
    
    def advance(self, delt):
       
-      self.save()
+      # self.save()
       self.row = self.row + delt
       if self.row < 1:
          self.row = self.nRows
@@ -1625,13 +1592,20 @@ class ldss3_redshiftgui:
       
    def setSpec(self, autoRange=True):
       """Set the spectrum to current row"""
-                  
       self.z = self.objects[self.row-1]['redshift']
       self.comment_text.setText(self.objects[self.row-1]['comment'])
 
       if self.version=='carpy':
          self.id=self.objects[self.row-1]['id']
+         if not os.path.isfile(getspec1Dname(self.mask, self.row, self.id)):
+            print 'Files for {} do not exist. Moving on.'.format(self.id)
+            self.redshifted=0
+            self.advance(1)
+            return
+         # try:
          self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
+         # except:
+            # print'Files for {} do not exist. Moving on.'.format(self.id)
       elif self.version=='cosmos':
          # Get the apnum header parameter
          self.apnum1D = self.header1D['APNUM{}'.format(self.row)]
@@ -1740,7 +1714,7 @@ class ldss3_redshiftgui:
       #                         padding=0)
                                
       self.setTitle_1D()
-      
+
       if self.param['Show lines']:
          
          features = self.features
@@ -1796,10 +1770,23 @@ class ldss3_redshiftgui:
          except:
             pass
          if self.param['Show trace']:
-            pen=pg.mkPen('r',width=2,style=QtCore.Qt.DashLine)
-            self.ext1=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace,pen=pen)
-            self.ext2=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace+self.extaper/2,pen=pen)
-            self.ext3=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace-self.extaper/2,pen=pen)
+            try:
+               pen=pg.mkPen('r',width=2,style=QtCore.Qt.DashLine)
+               self.ext1=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace,pen=pen)
+               self.ext2=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace+self.extaper/2,pen=pen)
+               self.ext3=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace-self.extaper/2,pen=pen)
+            except:
+               print 'Trace file not loaded'
+
+      self.objectsTable.selectRow(self.row-1)
+      self.objectsTable.scrollToItem(self.objectsTable.item(self.row-1,0),QtGui.QAbstractItemView.PositionAtCenter)
+      # temp=self.objectsTable.indexFromItem(self.objectsTable.item(self.row-1,0))
+      # import pdb
+      # pdb.set_trace()
+      # self.objectsTable.scrollTo(temp,QtGui.QAbstractItemView.PositionAtCenter)
+      
+
+
 
 # Set up the command line argument parser
 parser = argparse.ArgumentParser(description='Verify foreground/background quasars and measure absorbing gas around the foreground in the background quasar spectrum')
@@ -1818,4 +1805,4 @@ else:
    print('1D spectrum files already present. Copying objects file to backup')
    shutil.copy('{}_spec1D/{}_objects.fits'.format(args.m,args.m),'{}_spec1D/{}_objects_bkp.fits'.format(args.m,args.m))
       
-redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
+# redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
