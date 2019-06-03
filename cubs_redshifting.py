@@ -1415,13 +1415,13 @@ class ldss3_redshiftgui:
       self.setTable()
 # 
       path = '{}_spec1D'.format(self.mask)
-      if os.path.isfile(path):
-         savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
-                               self.objects[self.row-1]['id'])
-         fits.writeto(savename, self.spec, overwrite=True)
-      
       self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
-      
+
+      savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
+                               self.objects[self.row-1]['id'])
+      if not os.path.isfile(savename):
+         return
+      fits.writeto(savename, self.spec, overwrite=True)
       
       # If we have a redshift array, store it
       if self.redshifted == 1:
@@ -1430,6 +1430,21 @@ class ldss3_redshiftgui:
          self.redshifts.write(savename, overwrite=True)
          
       print('Saved')   
+      # if os.path.isfile(path):
+      #    savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
+      #                          self.objects[self.row-1]['id'])
+      #    fits.writeto(savename, self.spec, overwrite=True)
+      
+      # self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
+      
+      
+      # # If we have a redshift array, store it
+      # if self.redshifted == 1:
+      #    savename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
+      #                             self.objects[self.row-1]['id'])
+      #    self.redshifts.write(savename, overwrite=True)
+         
+      # print('Saved')   
 
    def autoMask(self):
       """Automatically mask things below and above some range, and the A band"""
@@ -1577,7 +1592,7 @@ class ldss3_redshiftgui:
    
    def advance(self, delt):
       
-      # self.save()
+      self.save()
       self.row = self.row + delt
       if self.row < 1:
          self.row = self.nRows
@@ -1602,10 +1617,8 @@ class ldss3_redshiftgui:
             self.redshifted=0
             self.advance(1)
             return
-         # try:
          self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
-         # except:
-            # print'Files for {} do not exist. Moving on.'.format(self.id)
+
       elif self.version=='cosmos':
          # Get the apnum header parameter
          self.apnum1D = self.header1D['APNUM{}'.format(self.row)]
