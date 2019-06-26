@@ -16,6 +16,8 @@ Basic Usage:
     -Identify specific lines with [1-9] and [!-%] (see redshift assignment keys below)
     -Zoom in and look for emission lines in the 2D--I often pull up the spectrum in ds9 to help with this since I'm better at using the scaling in that. (The 2D spectrum is called specname_sum.fits for CarPy output.)
 
+- What I need back is the {mask}_objects.fits file, which contains all the redshift assignments, etc. This gets updated constantly when running the program, which can be a little annoying if you accidentally change something you didn't want to, so we can alter this behavior. But this way you don't lose work by forgetting to hit a save button. Also, a backup file {mask}_objects_bkp.fits is made when you call this program if you've ran it before, so if you want to play with things and/or make a mistake you want to correct, you can copy that backup file back. Suggestions on how people want this behavior (or anything else!) changed are encouraged.
+
 
 cc window keystrokes:
 
