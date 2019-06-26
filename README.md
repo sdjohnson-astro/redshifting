@@ -20,19 +20,21 @@ export PYTHONPATH="$REDSHIFTING:$PYTHONPATH"
 
 ```
 conda create -n redshifting
-conda install -n redshifting python=3 numpy scipy matplotlib pyqtgraph
+conda install -n redshifting python=2 numpy scipy matplotlib pyqtgraph
 conda install -n redshifting astropy
 conda install -n redshifting -c GSECARS lmfit
 conda install -n redshifting -c anaconda pyqt
 
 source activate redshifting
 ```
-
+(Can probably also do python=3, but I can't promise it works 100%)
 
 # Running the GUI:
-cd into the directory for a mask reduced with CosmosPipeline
+cd into the directory *above* the folder with the reductions for that mask
+ (i.e., if you download the ldss3_v3 spectra, the folder you untar them into)
 and enter this command into the terminal: cubs_redshifting.py -m maskname
 
+See cubs_redshifting.txt for a usage guide and keystroke listing
 
 # Bugs:
 * redshifts in table are not being shown to consistent number of digits
