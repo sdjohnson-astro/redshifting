@@ -1,15 +1,15 @@
-Usage:
-
 Basic Usage:
 1) In terminal, run (one directory up from directory with the name of the mask that contains lots of *sum.fits files)
         cubs_redhisfting.py -m MASKNAME (-v cosmos)
-    The COSMOS and CarPy pipelines produce slightly different output formats--defaults to reading in CarPy, use -v cosmos if using COSMOS output.
+    The COSMOS and CarPy pipelines produce slightly different output formats--defaults to reading in CarPy, use -v cosmos if using COSMOS output. The spectra I'm making are CarPy.
     This should make a new directory (MASKNAME_spec1D) where spectra reformatted for this program and redshift data are stored.
 2) For each object
     - press 'M' to mask wavelengths at x>5000, x<9800, and the A band (~7600). These can be unmasked, but they are often very noisy, have bad flux calibration, and can mislead the PCA/chi-2 fitting.
     - press 'r' to determine the best fitting redshift.
     - press 'a/s/d/f' to assigned a quality of (a)wesome=2, (s)ingle-line=1, (d)amn=0, or (f)'ed=-1
-    - If the extraction is bad (or maybe if there are 2 objects) tick the corresponding checkbox.
+    - If the extraction is bad (or maybe if there are 2 objects) tick the corresponding checkbox (upper right)
+    - Add a comment at the bottom, if you like (need to hit enter after typing). Prob
+    - Press 'n' to go on to the next one.
 3) If the initial redshifting didn't work, you can:
     -mask/unmask regions of the spectrum with 'm' and 'u'. Cosmic rays will often need to be masked--CarPy does a weighted sum and attempts to filter out cosmics, but isn't always successful at that, especailly around dense skylines regions.
     -Choose a different redshift in the 'redshift' plot at the top with 'z', then run a local redshift minimization with 'l'
@@ -20,6 +20,7 @@ Basic Usage:
 cc window keystrokes:
 
 z: manually assign local redshift
+Lots of other keystrokes (zooming, setting quality/classification, etc) are the same as in the spec1D window
 
 spec1D window keystrokes:
 
@@ -32,10 +33,8 @@ B :              advance -10 objects
 ] :              pan left 1/3 of viewed range
 { :              pan left viewed range
 } :              pan left viewed range
-x :              zoom in x and center on current mouse position
-X :              zoom out in x and center on current mouse position
-y :              zoom in y and center on current mouse position
-Y :              zoom out in Y and center on current mouse position
+x/X :            zoom in/out in x and center on current mouse position
+X/Y :            zoom in/out y x and center on current mouse position
 w/W :            show full spectrum range (undo any zooming or plotting)
 +/= :            increase smoothing
 -/_ :            decrease smoothing
@@ -43,10 +42,11 @@ m   :            hit once left and once right to mask a spectral region
 M   :            automask (low and high wavelengths, atmosphere A band)
 u/U :            hit once left and once right to unmask a spectral region
 
-t/T :           set bottom/top of plot range
+t/T :           set bottom/top of plot range [Probably easier to navitage with zooming with x and y]
+e/E:            set left/right of plot range
 
 
-g/G :            classify object as a galaxy
+g/G :            classify object as a galaxy (default, so don't need to do this for most objects)
 h/H :            classify object as a star
 j/J :            classify object as a quasar
 
@@ -56,10 +56,10 @@ d/D :            set redshift quality to damn no redshift
 f/F :            set redshift quality to WTF?
 e   :            flip extraction flag (0 is good, 1 is bad)
 
-R :              redshift all objects over detault range with current classification
-r :              redshift this object over default range with current classification
+R :              redshift all objects over detault range with current classification (this will take some time...)
+r :              redshift this object over default range with current classification [After pressing 'z' in the top (Redshift) panel, or manually identifying a feature with keystrokes below]
 l :              redshift locally
-; :              increment redshift -0.0001
+; :              increment redshift -0.0001 [I don't use these much]
 : :              increment redshift -0.001
 ' :              increment redshift +0.0001
 " :              increment redshift +0.001
@@ -70,7 +70,7 @@ l :              redshift locally
 
 return/enter:   save[]
 
-quick redshift assignment keys
+quick redshift assignment keys [Looks like the way of doing this is different in pyabs--maybe change this to match?]
 1 Halpha Ha6564
 2 OIII 5008 OIII5008
 3 OIII 4959 OIII4960
@@ -88,16 +88,3 @@ quick redshift assignment keys
 $ CaII H setRedshiftCaIIH3969
 % CaII K setRedshiftCaIIK3934
 ^ MgII   setRedshiftMgII2799
-
-
-
-q
-e
-t
-y
-i
-o
-p
-z
-x
-v
