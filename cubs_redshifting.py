@@ -1459,8 +1459,12 @@ class ldss3_redshiftgui:
 
    def autoMask(self):
       """Automatically mask things below and above some range, and the A band"""
-      low_cut=5000
-      high_cut=9800
+      if (self.spec['wave'][0]<4000): #LDSS3
+         low_cut=5000
+         high_cut=9800
+      else: #IMACS
+         low_cut=5200
+         high_cut=9275
       aband=[7588,7684]
 
       index = np.where((self.wave < low_cut) | (self.wave > high_cut)
