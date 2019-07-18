@@ -107,6 +107,11 @@ def createSpec1Dfiles(mask,version='carpy'):
             wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
             if header['DC-FLAG']:
                wave=np.power(10,wave)
+            #Convert wavelengths to vacuum from air
+            # s = 1e4 / wave
+            # n = (1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2)
+            #     + 0.0001599740894897 / (38.92568793293 - s**2))
+            # wave*=n
             spec = formatspectrum(wave, flux1D, error1D,raw=flux1Draw,rawerr=error1Draw)
             objID=target['object']
             objects[i]['id'] = objID
@@ -918,6 +923,12 @@ class ldss3_redshiftgui:
       y1_new = self.mouse_y_redshift + yRange/2.0
       
       self.plot_redshift.setYRange(y0_new, y1_new, padding=0)
+
+   def zoom_default(self):
+      q1,q2=np.percentile(self.flux1D[self.spec['mask'].astype('bool')],[30,95])
+      self.plot_spec1D.setYRange(-q1,3*q2,padding=0)
+      self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
+
    
    # def zoom_redshift(self, key, ):
    #    """Zoom in or out in wavelength (x) and/or flux (y)"""
@@ -1008,9 +1019,9 @@ class ldss3_redshiftgui:
             self.trimxy_spec(event.text())
             
          if (event.text() == 'w') | (event.text() == 'W'):
-            self.plot_spec1D.autoRange()
-            self.updateXrange_1D()
-            
+            self.zoom_default()
+            # self.plot_spec1D.autoRange()
+            # self.updateXrange_1D()            
             
          if (event.text() == '=') | (event.text() == '+'):
             self.smoothing = self.smoothing + 2
@@ -1662,9 +1673,8 @@ class ldss3_redshiftgui:
       self.draw()
       self.plot_redshift.autoRange()
       if autoRange:
-         self.plot_spec1D.autoRange()
-         self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
-         self.updateXrange_1D()
+         # self.plot_spec1D.autoRange()
+         self.zoom_default()
       
       self.param['row:'] =  '{}/{}'.format(self.row, self.nRows)
       self.param['id:'] =  '{}'.format(self.objects[self.row-1]['id'])
@@ -1717,8 +1727,10 @@ class ldss3_redshiftgui:
                         pen=pg.mkPen('w', width=2), clear=True)
       self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
                         pen=pg.mkPen('b', width=2))
-      self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
-                        pen=pg.mkPen('r', width=2))
+      # self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
+                        # pen=pg.mkPen('r', width=2))
+      self.plot_spec1D.plot(self.wave, self.spec['model'],pen=pg.mkPen('r', width=2))
+      self.plot_spec1D.plot(self.wave, np.median(self.flux1D)*self.spec['mask'],pen=pg.mkPen('g', width=4))
       if self.param['Show raw']:
          self.plot_spec1D.plot(self.wave, self.flux1Draw*self.spec['mask'], 
             pen=pg.mkPen('w', width=1,style=QtCore.Qt.DotLine))
