@@ -463,7 +463,7 @@ class ldss3_redshiftgui:
       
       
       self.objectsTable = pg.TableWidget(editable=False, sortable=False)
-      self.objectsTable.setFormat('%0.4f', 4)
+      self.objectsTable.setFormat('%0.5f', 2)
       self.setTable()
       
       self.objectsTable.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -1464,7 +1464,7 @@ class ldss3_redshiftgui:
       aband=[7588,7684]
 
       index = np.where((self.wave < low_cut) | (self.wave > high_cut)
-         | ((self.wave > aband[0]) & (self.wave < aband[1])))
+         | ((self.wave > aband[0]) & (self.wave < aband[1])) | (self.error1D == 0))
       self.spec['mask'][index] = 0
       self.draw()
 
@@ -1730,7 +1730,7 @@ class ldss3_redshiftgui:
       # self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
                         # pen=pg.mkPen('r', width=2))
       self.plot_spec1D.plot(self.wave, self.spec['model'],pen=pg.mkPen('r', width=2))
-      self.plot_spec1D.plot(self.wave, np.median(self.flux1D)*self.spec['mask'],pen=pg.mkPen('g', width=4))
+      # self.plot_spec1D.plot(self.wave, np.median(self.flux1D)*self.spec['mask'],pen=pg.mkPen('g', width=4)) #For debugging
       if self.param['Show raw']:
          self.plot_spec1D.plot(self.wave, self.flux1Draw*self.spec['mask'], 
             pen=pg.mkPen('w', width=1,style=QtCore.Qt.DotLine))
