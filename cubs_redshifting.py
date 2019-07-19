@@ -257,11 +257,11 @@ class ldss3_redshiftgui:
       self.plot_spec2D_plot.setMouseEnabled(x=False, y=False)
       self.plot_spec2D_hist = pg.HistogramLUTWidget()
       self.plot_spec2D_hist.setImageItem(self.plot_spec2D)
-      
+      cm = self.plot_spec2D_hist.gradient.colorMap()
+      cm.pos=np.array([1.,0.]) #is this really the easiest way to make white->black into black->white?
+      self.plot_spec2D_hist.gradient.setColorMap(cm)
       
       # self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
-      
-      
       
       # Set the 1D spectrum
       
@@ -528,8 +528,7 @@ class ldss3_redshiftgui:
       #print('Going to object...')
       self.row = self.objectsTable.selectedItems()[0].row()+1
       self.setSpec()
-      self.draw()
-      # self.objectsTable.
+      # self.draw()
    
    def setRedshiftOVI1033(self):
          wave0 = 1033.82
@@ -1613,11 +1612,9 @@ class ldss3_redshiftgui:
          self.row = self.nRows
       if self.row > self.nRows:
          self.row = 1
-         
-      #print('{}/{}'.format(self.row, self.nRows))
-
-
       self.setSpec()
+               
+      #print('{}/{}'.format(self.row, self.nRows))
       #self.draw()
       
    def setSpec(self, autoRange=True):
@@ -1679,6 +1676,8 @@ class ldss3_redshiftgui:
       if autoRange:
          # self.plot_spec1D.autoRange()
          self.zoom_default()
+      self.plot_spec2D_hist.setHistogramRange(*np.percentile(self.flux2D,[0.1,99.9]))
+      self.plot_spec2D_hist.setLevels(*np.percentile(self.flux2D,[0.5,99.5]))
       
       self.param['row:'] =  '{}/{}'.format(self.row, self.nRows)
       self.param['id:'] =  '{}'.format(self.objects[self.row-1]['id'])
@@ -1790,7 +1789,7 @@ class ldss3_redshiftgui:
       # 2D spectrum
 
       self.plot_spec2D.setImage(self.flux2D, xvals=self.wave, 
-                                levels=np.percentile(self.flux2D, [5, 99.5]), 
+                                levels=self.plot_spec2D_hist.getLevels(),#np.percentile(self.flux2D, [5, 99.5]), 
                                 border=pg.mkPen('w', width=2))
       
       if self.version=='carpy':
