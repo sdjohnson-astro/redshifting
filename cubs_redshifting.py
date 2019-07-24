@@ -830,9 +830,9 @@ class ldss3_redshiftgui:
             self.setClass('quasar')
             
             
-         if event.text() == 'R':
+         # if event.text() == 'R':
             
-            self.redshiftAll()
+            # self.redshiftAll()
             
          
          if event.text() == 'r':
@@ -1068,9 +1068,9 @@ class ldss3_redshiftgui:
             self.setClass('quasar')
             
             
-         if event.text() == 'R':
+         # if event.text() == 'R':
             
-            self.redshiftAll()
+            # self.redshiftAll()
             
          
          if event.text() == 'r':
@@ -1278,7 +1278,6 @@ class ldss3_redshiftgui:
       #self.redshifted = 1
       #self.redshifts = Table(redshifts)
       self.save()
-      #self.setSpec()
       self.draw()      
    
    
@@ -1338,11 +1337,8 @@ class ldss3_redshiftgui:
 
       self.z = z      
       self.save()
-      #self.setSpec()
-
       self.draw()
-   
-   
+      
          
    def redshiftObject(self):
       
@@ -1408,8 +1404,6 @@ class ldss3_redshiftgui:
          self.redshifted = 1
          self.redshifts = Table(redshifts)
          self.save()
-         self.setSpec(autoRange=False)
-         
          self.draw()
          
       else:
