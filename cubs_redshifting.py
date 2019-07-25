@@ -434,26 +434,24 @@ class ldss3_redshiftgui:
       
       
       self.paramSpec = [
+              dict(name='z=', type='str', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
+              dict(name='quality:', type='str', value='', readonly=True),
+              dict(name='class:', type='str', value='', readonly=True), 
+              dict(name='row:', type='str', value='', readonly=True),
+              dict(name='id:', type='str', value='', readonly=True), 
               dict(name='Show lines', type='bool', value=True),
               dict(name='Show trace', type='bool', value=True),
               dict(name='Show raw', type='bool', value=False),
-              dict(name='row:', type='str', value='', readonly=True),
-              dict(name='id:', type='str', value='', readonly=True), 
-              dict(name='class:', type='str', value='', readonly=True), 
-              dict(name='z=', type='str', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
-              dict(name='quality:', type='str', value='', readonly=True),
               dict(name='Bad Extraction:', type='bool', value=False)
-
-
               # dict(name='extraction center:', type='str', value='', readonly=True)
               # dict(name='extraction aper:', type='str', value='', readonly=True)
            ]
            
       self.param = pt.Parameter.create(name='Options', type='group', children=self.paramSpec)
       #Redraw when the boolean option buttons are pressed
-      self.param.children()[0].sigValueChanged.connect(self.draw)
-      self.param.children()[1].sigValueChanged.connect(self.draw)
-      self.param.children()[2].sigValueChanged.connect(self.draw)
+      self.param.children()[5].sigValueChanged.connect(self.draw)
+      self.param.children()[6].sigValueChanged.connect(self.draw)
+      self.param.children()[7].sigValueChanged.connect(self.draw)
       self.param.children()[8].sigValueChanged.connect(self.setExtFlag)
       self.tree = pt.ParameterTree()
       self.tree.setParameters(self.param)
@@ -1335,7 +1333,8 @@ class ldss3_redshiftgui:
          
       print('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
-      self.z = z      
+      self.z = z
+      self.param['z='] =  '{:0.5f}'.format(self.z)       
       self.save()
       self.draw()
       
@@ -1403,6 +1402,7 @@ class ldss3_redshiftgui:
          self.z = z
          self.redshifted = 1
          self.redshifts = Table(redshifts)
+         self.param['z='] =  '{:0.5f}'.format(self.z)      
          self.save()
          self.draw()
          
@@ -1719,7 +1719,7 @@ class ldss3_redshiftgui:
                                  pen=pg.mkPen('w', width=2), clear=True)
          self.plot_redshift.addItem(pg.InfiniteLine(self.z,
                                   pen=pg.mkPen('r', width=2, style=QtCore.Qt.DotLine)))
-      
+         self.plot_redshift.autoRange()
       self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
                         pen=pg.mkPen('w', width=2), clear=True)
       self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
