@@ -1066,9 +1066,9 @@ class ldss3_redshiftgui:
             self.setClass('quasar')
             
             
-         # if event.text() == 'R':
+          if event.text() == '/':
             
-            # self.redshiftAll()
+             self.redshiftAll()
             
          
          if event.text() == 'r':
