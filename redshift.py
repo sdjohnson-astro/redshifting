@@ -116,38 +116,85 @@ def eigensum_star(wave, z, eigen1, eigen2, eigen3, eigen4, eigen5, eigen6, eigen
 # Get best-fit galaxy model at a redshift. flux calibration polynomials not currently included
 def fitatz_galaxy(spec, z):
    
-      # Evaluate eigenspecra at needed redshifts
-      wave_zp1 = spec['wave']/(1.0 + z)
-      eigen1 = eigen_galaxy1_interp(wave_zp1)
-      eigen2 = eigen_galaxy2_interp(wave_zp1)
-      eigen3 = eigen_galaxy3_interp(wave_zp1)
-      eigen4 = eigen_galaxy4_interp(wave_zp1)
-      
-      mask = (eigen1 != -999.0).astype(float)
-      
-      At = np.matrix([eigen1, eigen2, eigen3, eigen4])
-      C = np.diag(spec['error']**2)
-      one_over_sigmasquared = 1/spec['error']**2
-      one_over_sigmasquared[~np.isfinite(one_over_sigmasquared)] = 0.0
-      Ci = np.diag(one_over_sigmasquared)
-      A = At.transpose()
-      Y = np.matrix(spec['flux']).transpose()
-      
-      
-      
-      AtCi = np.matrix([eigen1*one_over_sigmasquared*mask, eigen2*one_over_sigmasquared*mask, eigen3*one_over_sigmasquared*mask, eigen4*one_over_sigmasquared*mask])#At*Ci
-      eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
-      eigenvalues = eigenvalues.getA1()
-      
-      model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
-              + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4
-              
-      chi2 = np.sum(np.square(spec['flux'] - model)*one_over_sigmasquared*mask)
-      dof = np.sum(mask) - 4
-      chi2_pdf = chi2/dof
-      model = model*mask
-      
-      return (eigenvalues, model, chi2_pdf)
+   
+   # Evaluate eigenspecra at needed redshifts
+   
+   constant = np.ones(len(spec))
+   linear = np.arange(len(spec))
+   square = np.arange(len(spec))**2
+   
+   wave_zp1 = spec['wave']/(1.0 + z)
+   eigen1 = eigen_galaxy1_interp(wave_zp1)
+   eigen2 = eigen_galaxy2_interp(wave_zp1)
+   eigen3 = eigen_galaxy3_interp(wave_zp1)
+   eigen4 = eigen_galaxy4_interp(wave_zp1)
+   
+   mask = (eigen1 != -999.0).astype(float)*spec['mask']
+   
+   At = np.matrix([eigen1, eigen2, eigen3, eigen4, constant, linear, square])
+   A = At.transpose()
+   
+   one_over_sigmasquared = 1/spec['error']**2
+   one_over_sigmasquared[~np.isfinite(one_over_sigmasquared)] = 0.0
+   Ci = np.diag(one_over_sigmasquared)
+   A = At.transpose()
+   Y = np.matrix(spec['flux']).transpose()
+   
+
+
+   AtCi = np.matrix([eigen1*one_over_sigmasquared*mask,
+                     eigen2*one_over_sigmasquared*mask,
+                     eigen3*one_over_sigmasquared*mask,
+                     eigen4*one_over_sigmasquared*mask,
+                     constant*one_over_sigmasquared*mask,
+                     linear*one_over_sigmasquared*mask,
+                     square*one_over_sigmasquared*mask])#At*Ci
+   eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
+   eigenvalues = eigenvalues.getA1()
+
+   model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
+           + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4 \
+           + eigenvalues[4]*constant + eigenvalues[5]*linear + eigenvalues[6]*square
+        
+   chi2 = np.sum(np.square(spec['flux'] - model)*one_over_sigmasquared*mask)
+   dof = np.sum(mask) - 7
+   chi2_pdf = chi2/dof
+
+   return (eigenvalues, model, chi2_pdf)
+   
+   
+#      # Evaluate eigenspecra at needed redshifts
+#      wave_zp1 = spec['wave']/(1.0 + z)
+#      eigen1 = eigen_galaxy1_interp(wave_zp1)
+#      eigen2 = eigen_galaxy2_interp(wave_zp1)
+#      eigen3 = eigen_galaxy3_interp(wave_zp1)
+#      eigen4 = eigen_galaxy4_interp(wave_zp1)
+#      
+#      mask = (eigen1 != -999.0).astype(float)
+#      
+#      At = np.matrix([eigen1, eigen2, eigen3, eigen4])
+#      C = np.diag(spec['error']**2)
+#      one_over_sigmasquared = 1/spec['error']**2
+#      one_over_sigmasquared[~np.isfinite(one_over_sigmasquared)] = 0.0
+#      Ci = np.diag(one_over_sigmasquared)
+#      A = At.transpose()
+#      Y = np.matrix(spec['flux']).transpose()
+#      
+#      
+#      
+#      AtCi = np.matrix([eigen1*one_over_sigmasquared*mask, eigen2*one_over_sigmasquared*mask, eigen3*one_over_sigmasquared*mask, eigen4*one_over_sigmasquared*mask])#At*Ci
+#      eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
+#      eigenvalues = eigenvalues.getA1()
+#      
+#      model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
+#              + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4
+#              
+#      chi2 = np.sum(np.square(spec['flux'] - model)*one_over_sigmasquared*mask)
+#      dof = np.sum(mask) - 4
+#      chi2_pdf = chi2/dof
+#      model = model*mask
+#      
+#      return (eigenvalues, model, chi2_pdf)
       
  # Same as fitatz_galaxy but for quasars     
 def fitatz_qso(spec, z):
@@ -709,7 +756,7 @@ def findz_galaxy(spec, zmin=-0.1, zmax=1.5, dz=0.0001):
                  + eigenvalues[4]*constant + eigenvalues[5]*linear + eigenvalues[6]*square
               
          chi2 = np.sum(np.square(flux - model)*one_over_sigmasquared*mask)
-         dof = np.sum(mask) - 4
+         dof = np.sum(mask) - 7
          chi2_pdf = chi2/dof
       
          return (eigenvalues, chi2, chi2_pdf)

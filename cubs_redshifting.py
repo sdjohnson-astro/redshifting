@@ -108,10 +108,10 @@ def createSpec1Dfiles(mask,version='carpy'):
             if header['DC-FLAG']:
                wave=np.power(10,wave)
             #Convert wavelengths to vacuum from air
-            # s = 1e4 / wave
-            # n = (1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2)
+            #s = 1e4 / wave
+            #n = (1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2)
             #     + 0.0001599740894897 / (38.92568793293 - s**2))
-            # wave*=n
+            #wave*=n
             spec = formatspectrum(wave, flux1D, error1D,raw=flux1Draw,rawerr=error1Draw)
             objID=target['object']
             objects[i]['id'] = objID
@@ -1349,12 +1349,12 @@ class ldss3_redshiftgui:
       
          if self.objects[self.row-1]['class'] == 'galaxy':
             
-            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.00045)
+            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.00075)
                      
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
             
-            redshifts_fine = redshift.findz_galaxy(spec, zmin=z-0.1, zmax=z+0.1, dz=0.0001)
+            redshifts_fine = redshift.findz_galaxy(spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
             
             redshifts = vstack((Table(redshifts), Table(redshifts_fine)))
             
