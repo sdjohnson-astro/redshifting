@@ -1349,7 +1349,7 @@ class ldss3_redshiftgui:
       
          if self.objects[self.row-1]['class'] == 'galaxy':
             
-            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.00075)
+            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.001)
                      
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
