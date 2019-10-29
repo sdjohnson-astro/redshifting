@@ -163,41 +163,13 @@ def fitatz_galaxy(spec, z):
    return (eigenvalues, model, chi2_pdf)
    
    
-#      # Evaluate eigenspecra at needed redshifts
-#      wave_zp1 = spec['wave']/(1.0 + z)
-#      eigen1 = eigen_galaxy1_interp(wave_zp1)
-#      eigen2 = eigen_galaxy2_interp(wave_zp1)
-#      eigen3 = eigen_galaxy3_interp(wave_zp1)
-#      eigen4 = eigen_galaxy4_interp(wave_zp1)
-#      
-#      mask = (eigen1 != -999.0).astype(float)
-#      
-#      At = np.matrix([eigen1, eigen2, eigen3, eigen4])
-#      C = np.diag(spec['error']**2)
-#      one_over_sigmasquared = 1/spec['error']**2
-#      one_over_sigmasquared[~np.isfinite(one_over_sigmasquared)] = 0.0
-#      Ci = np.diag(one_over_sigmasquared)
-#      A = At.transpose()
-#      Y = np.matrix(spec['flux']).transpose()
-#      
-#      
-#      
-#      AtCi = np.matrix([eigen1*one_over_sigmasquared*mask, eigen2*one_over_sigmasquared*mask, eigen3*one_over_sigmasquared*mask, eigen4*one_over_sigmasquared*mask])#At*Ci
-#      eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
-#      eigenvalues = eigenvalues.getA1()
-#      
-#      model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
-#              + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4
-#              
-#      chi2 = np.sum(np.square(spec['flux'] - model)*one_over_sigmasquared*mask)
-#      dof = np.sum(mask) - 4
-#      chi2_pdf = chi2/dof
-#      model = model*mask
-#      
-#      return (eigenvalues, model, chi2_pdf)
       
  # Same as fitatz_galaxy but for quasars     
 def fitatz_qso(spec, z):
+   
+      constant = np.ones(len(spec))
+      linear = np.arange(len(spec))
+      square = np.arange(len(spec))**2
    
       # Evaluate eigenspecra at needed redshifts
       wave_zp1 = spec['wave']/(1.0 + z)
@@ -208,25 +180,36 @@ def fitatz_qso(spec, z):
       
       mask = (eigen1 != -999.0).astype(float)
       
-      At = np.matrix([eigen1, eigen2, eigen3, eigen4])
+      At = np.matrix([eigen1, eigen2, eigen3, eigen4, constant, linear, square])
       C = np.diag(spec['error']**2)
       one_over_sigmasquared = 1/spec['error']**2
       one_over_sigmasquared[~np.isfinite(one_over_sigmasquared)] = 0.0
+      
+      index = np.where((spec['mask'] == 0) | (spec['error'] == 0.0))
+      one_over_sigmasquared[index] = 0.0
+      
       Ci = np.diag(1/spec['error']**2)
       A = At.transpose()
       Y = np.matrix(spec['flux']).transpose()
       
       
       
-      AtCi = np.matrix([eigen1*one_over_sigmasquared*mask, eigen2*one_over_sigmasquared*mask, eigen3*one_over_sigmasquared*mask, eigen4*one_over_sigmasquared*mask])#At*Ci
+      AtCi = np.matrix([eigen1*one_over_sigmasquared*mask,       
+                        eigen2*one_over_sigmasquared*mask,
+                        eigen3*one_over_sigmasquared*mask,
+                        eigen4*one_over_sigmasquared*mask,
+                        constant*one_over_sigmasquared*mask,
+                        linear*one_over_sigmasquared*mask,
+                        square*one_over_sigmasquared*mask])#At*Ci
       eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
       eigenvalues = eigenvalues.getA1()
       
       model = eigenvalues[0]*eigen1 + eigenvalues[1]*eigen2 \
-              + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4
+              + eigenvalues[2]*eigen3 + eigenvalues[3]*eigen4 \
+              + eigenvalues[4]*constant + eigenvalues[5]*linear + eigenvalues[6]*square
               
       chi2 = np.sum(np.square(spec['flux'] - model)*one_over_sigmasquared*mask)
-      dof = np.sum(mask) - 4.0
+      dof = np.sum(mask) - 7.0
       chi2_pdf = chi2/dof
       
       return (eigenvalues, model, chi2_pdf)
@@ -234,11 +217,19 @@ def fitatz_qso(spec, z):
  # Same as fitatz_galaxy but for stars     
 def fitatz_star(spec, z):
    
+      constant = np.ones(len(spec))
+      linear = np.arange(len(spec))
+      square = np.arange(len(spec))**2
+   
       # Precompute some matrices
       C = np.diag(spec['error']**2)
       Ci = np.diag(1/spec['error']**2)
       one_over_sigmasquared = 1/spec['error']**2
       one_over_sigmasquared[~np.isfinite(one_over_sigmasquared)] = 0.0
+      
+      index = np.where((spec['mask'] == 0) | (spec['error'] == 0.0))
+      one_over_sigmasquared[index] = 0.0
+      
       wave = spec['wave']
       flux = spec['flux']
       error = spec['error']
@@ -259,9 +250,11 @@ def fitatz_star(spec, z):
       eigen11 = eigen_star11_interp(wave_zp1)
       
       mask = (eigen1 != -999.0).astype(float)
+      
+      
    
       At = np.matrix([eigen1, eigen2, eigen3, eigen4, eigen5, eigen6, eigen7,
-                      eigen8, eigen9, eigen10, eigen11])
+                      eigen8, eigen9, eigen10, eigen11, constant, linear, square])
       A = At.transpose()
       
    
@@ -276,7 +269,10 @@ def fitatz_star(spec, z):
                         eigen8*one_over_sigmasquared*mask,
                         eigen9*one_over_sigmasquared*mask,
                         eigen10*one_over_sigmasquared*mask,
-                        eigen11*one_over_sigmasquared*mask])#At*Ci
+                        eigen11*one_over_sigmasquared*mask,
+                        constant*one_over_sigmasquared*mask,
+                        linear*one_over_sigmasquared*mask,
+                        square*one_over_sigmasquared*mask])#At*Ci
       eigenvalues = np.linalg.inv(AtCi*A)*AtCi*Y
       eigenvalues = eigenvalues.getA1()
    
@@ -285,11 +281,13 @@ def fitatz_star(spec, z):
               + eigenvalues[4]*eigen5 + eigenvalues[5]*eigen6 \
               + eigenvalues[6]*eigen7 + eigenvalues[7]*eigen8 \
               + eigenvalues[8]*eigen9 + eigenvalues[9]*eigen10 \
-              + eigenvalues[10]*eigen11
+              + eigenvalues[10]*eigen11 \
+              + eigenvalues[11]*constant + eigenvalues[12]*linear + eigenvalues[13]*square
+              
       model = model*mask     
       chi2 = np.sum(np.square(flux - model)*one_over_sigmasquared*mask)
       
-      dof = np.sum(mask) - 11.0
+      dof = np.sum(mask) - 13.0
       chi2_pdf = chi2/dof
       
       

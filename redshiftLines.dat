@@ -24,9 +24,10 @@ wave   name       list
 2803.53 MgII       qsoals
 2852.96 MgI        qsoals
 3346.79	NeV        quasar
-3426.85	NeV       quasar
+3426.85	NeV        quasar
 3727.09	OII        emission
 3729.87	OII        emission
+3869.86 NeIII      emission
 3889.0	HeI        emission
 3934.78 CaIIK      absorption
 3969.59 CaIIH      absorption

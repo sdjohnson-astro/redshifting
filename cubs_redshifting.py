@@ -531,7 +531,9 @@ class ldss3_redshiftgui:
    def setRedshiftOVI1033(self):
          wave0 = 1033.82
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
+         
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
             
@@ -539,6 +541,7 @@ class ldss3_redshiftgui:
    def setRedshiftHI1215(self):
          wave0 = 1215.24
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -546,6 +549,7 @@ class ldss3_redshiftgui:
    def setRedshiftNV1240(self):
          wave0 = 1240.81
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -553,6 +557,7 @@ class ldss3_redshiftgui:
    def setRedshiftCIV1549(self):
          wave0 = 1549.48
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -560,6 +565,7 @@ class ldss3_redshiftgui:
    def setRedshiftOIII1665(self):
          wave0 = 1665.85
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -567,6 +573,7 @@ class ldss3_redshiftgui:
    def setRedshiftCIII1908(self):
          wave0 = 1908.734
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -574,6 +581,7 @@ class ldss3_redshiftgui:
    def setRedshiftMgII2799(self):
          wave0 = 2799.117
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -581,6 +589,7 @@ class ldss3_redshiftgui:
    def setRedshiftOII3728(self):
          wave0 = 3728.60
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -588,6 +597,7 @@ class ldss3_redshiftgui:
    def setRedshiftCaIIK3934(self):
          wave0 = 3934.777
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -595,6 +605,7 @@ class ldss3_redshiftgui:
    def setRedshiftCaIIH3969(self):
          wave0 = 3969.588
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -602,6 +613,7 @@ class ldss3_redshiftgui:
    def setRedshiftHd4102(self):
          wave0 = 4102.89
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -609,6 +621,7 @@ class ldss3_redshiftgui:
    def setRedshiftGband4305(self):
          wave0 = 4305.61
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -616,6 +629,7 @@ class ldss3_redshiftgui:
    def setRedshiftHg4341(self):
          wave0 = 4341.68
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -623,6 +637,7 @@ class ldss3_redshiftgui:
    def setRedshiftOIII4364(self):
          wave0 = 4364.436
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -630,6 +645,7 @@ class ldss3_redshiftgui:
    def setRedshiftHb4862(self):
          wave0 = 4862.68
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -637,6 +653,7 @@ class ldss3_redshiftgui:
    def setRedshiftOIII4960(self):
          wave0 = 4960.295
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -644,6 +661,7 @@ class ldss3_redshiftgui:
    def setRedshiftOIII5008(self):
          wave0 = 5008.240
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -651,6 +669,7 @@ class ldss3_redshiftgui:
    def setRedshiftMgI5176(self):
          wave0 = 5176.7
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -658,6 +677,7 @@ class ldss3_redshiftgui:
    def setRedshiftNaI5895(self):
          wave0 = 5895.6
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -665,6 +685,7 @@ class ldss3_redshiftgui:
    def setRedshiftOI6302(self):
          wave0 = 6302.046
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -672,6 +693,7 @@ class ldss3_redshiftgui:
    def setRedshiftOI6365(self):
          wave0 = 6365.536
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -679,6 +701,7 @@ class ldss3_redshiftgui:
    def setRedshiftNII6549(self):
          wave0 = 6549.86
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -686,13 +709,16 @@ class ldss3_redshiftgui:
    def setRedshiftHa6564(self):
          wave0 = 6564.61
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
+         self.fitObjectAtRedshift()
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
                   
    def setRedshiftNII6585(self):
          wave0 = 6585.27
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -700,6 +726,7 @@ class ldss3_redshiftgui:
    def setRedshiftSII6718(self):
          wave0 = 6718.29
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -707,6 +734,7 @@ class ldss3_redshiftgui:
    def setRedshiftSII6732(self):
          wave0 = 6732.67
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -714,6 +742,7 @@ class ldss3_redshiftgui:
    def setRedshiftCaII8500(self):
          wave0 = 8500.36
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -721,6 +750,7 @@ class ldss3_redshiftgui:
    def setRedshiftCaII8544(self):
          wave0 = 8544.44
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -728,6 +758,7 @@ class ldss3_redshiftgui:
    def setRedshiftCaII8664(self):
          wave0 = 8664.52
          self.z = self.mouse_x_spec1D/wave0 - 1
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -1209,7 +1240,7 @@ class ldss3_redshiftgui:
             
             self.setRedshiftMgII2799()
             
-         if event.text() == 'r':
+         if event.text() == 'z':
             
             self.fitObjectAtRedshift()
             
@@ -1301,7 +1332,7 @@ class ldss3_redshiftgui:
          
       if self.objects[self.row-1]['class'] == 'star':
          
-         redshifts = redshift.findz_star(spec, zmin=self.z-0.01, zmax=self.z+0.01, dz=0.0001)
+         redshifts = redshift.findz_star(spec, zmin=self.z-0.001, zmax=self.z+0.001, dz=0.0001)
          
          minIndex = np.argmin(redshifts['chi2_pdf'])
          z = redshifts[minIndex]['z']
@@ -1349,7 +1380,7 @@ class ldss3_redshiftgui:
       
          if self.objects[self.row-1]['class'] == 'galaxy':
             
-            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.001)
+            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.0005)
                      
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
