@@ -121,7 +121,7 @@ def createSpec1Dfiles(mask,version='carpy'):
             objects[i]['extpos']=header['EXTRPOS']
             objects[i]['extaper']=header['APER']
          else:
-            print 'File is missing: {}'.format(target['spec1d'])
+            print('File is missing: {}'.format(target['spec1d']))
             objects[i]['id']=target['object']
             continue
          savename = getspec1Dname(mask, i+1, objID)
@@ -175,7 +175,7 @@ def createSpec1Dfiles(mask,version='carpy'):
 class ldss3_redshiftgui:
    """Defining the GUI class for LDSS3 redshift assignment"""
    
-   def __init__(self, mask, xsize=1000, ysize=1000, version='carpy'):
+   def __init__(self, mask, xsize=1000, ysize=1000, version='carpy',indfile=None):
       
       self.mask = mask
       self.xsize = xsize
@@ -189,7 +189,7 @@ class ldss3_redshiftgui:
             # self.exttrace=gdict['trace'][0]
             self.exttrace=fits.getdata('{}/{}_trace.fits'.format(mask,mask))
          except:
-            print 'Couldn\'t read extraction trace file'
+            print('Couldn\'t read extraction trace file')
       
       # Read in the 1d and 2d files
       if self.version=='cosmos':
@@ -201,7 +201,6 @@ class ldss3_redshiftgui:
       path = '{}_spec1D'.format(mask)
       self.objects = Table.read('{}/{}_objects.fits'.format(path, mask))
 
-      
       # Set the initial row number to zero
       self.row = 1
       self.nRows = len(self.objects)
@@ -463,7 +462,22 @@ class ldss3_redshiftgui:
       self.objectsTable = pg.TableWidget(editable=False, sortable=False)
       self.objectsTable.setFormat('%0.5f', 2)
       self.setTable()
-      
+
+      #Read in file to only include some indices.
+      #Takes first item in each row (skips first 2) until it hits a
+      #line that starts with carriage return
+      #Then, hide those rows
+      if indfile is not None:
+         with open(indfile,'r') as f:
+            inds=f.readlines()
+         inds=inds[2:inds.index('\n')]
+         inds=[int(l.split()[0]) for l in inds]
+         for ind in range(0,self.nRows):
+            if ind not in inds:
+               self.objectsTable.hideRow(ind)
+         self.inds=inds
+         self.row=inds[0]+1
+
       self.objectsTable.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
       self.objectsTable.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
       self.objectsTable.doubleClicked.connect(self.goToObject)
@@ -520,7 +534,11 @@ class ldss3_redshiftgui:
    def setTable(self):
       
       self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'extflag','row','comment']))
-   
+      if hasattr(self,'inds'):
+         for ind in range(0,self.nRows):
+            if ind not in self.inds:
+               self.objectsTable.hideRow(ind)
+
    def goToObject(self):
       
       #print('Going to object...')
@@ -1444,7 +1462,6 @@ class ldss3_redshiftgui:
          
       
    
-            
    def save(self):
       
       self.setTable()
@@ -1632,11 +1649,20 @@ class ldss3_redshiftgui:
    def advance(self, delt):
       
       self.save()
-      self.row = self.row + delt
-      if self.row < 1:
-         self.row = self.nRows
-      if self.row > self.nRows:
-         self.row = 1
+      if hasattr(self,'inds'):
+         ind = self.inds.index(self.row-1)
+         ind+=delt
+         if ind > len(self.inds)-1:
+            ind=0
+         elif ind<0:
+            ind=len(self.inds)-1
+         self.row = self.inds[ind]+1
+      else:
+         self.row = self.row + delt
+         if self.row < 1:
+            self.row = self.nRows
+         if self.row > self.nRows:
+            self.row = 1
       self.setSpec()
                
       #print('{}/{}'.format(self.row, self.nRows))
@@ -1650,10 +1676,11 @@ class ldss3_redshiftgui:
       if self.version=='carpy':
          self.id=self.objects[self.row-1]['id']
          if not os.path.isfile(getspec1Dname(self.mask, self.row, self.id)):
-            print 'Files for {} do not exist. Moving on.'.format(self.id)
+            print('Files for {} do not exist. Moving on.'.format(self.id))
             self.redshifted=0
             self.advance(1)
             return
+
          self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
 
       elif self.version=='cosmos':
@@ -1812,14 +1839,14 @@ class ldss3_redshiftgui:
       # self.plot_spec2D_view.addItem(self.plot_spec2D)
 
       # 2D spectrum
-
       self.plot_spec2D.setImage(self.flux2D, xvals=self.wave, 
                                 levels=self.plot_spec2D_hist.getLevels(),#np.percentile(self.flux2D, [5, 99.5]), 
                                 border=pg.mkPen('w', width=2))
       
       if self.version=='carpy':
          try: #need to remove those lines if they are there already...
-            map(self.plot_spec2D_plot.removeItem,[self.ext1,self.ext2,self.ext3])
+            _ = list(map(self.plot_spec2D_plot.removeItem,[self.ext1,self.ext2,self.ext3]))
+            # map(lambda ext:ext.clear(),[self.ext1,self.ext2,self.ext3])
          except:
             pass
          if self.param['Show trace']:
@@ -1829,13 +1856,11 @@ class ldss3_redshiftgui:
                self.ext2=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace+self.extaper/2,pen=pen)
                self.ext3=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace-self.extaper/2,pen=pen)
             except:
-               print 'Trace file not loaded'
+               print('Trace file not loaded')
 
       self.objectsTable.selectRow(self.row-1)
       self.objectsTable.scrollToItem(self.objectsTable.item(self.row-1,0),QtGui.QAbstractItemView.PositionAtCenter)
       # temp=self.objectsTable.indexFromItem(self.objectsTable.item(self.row-1,0))
-      # import pdb
-      # pdb.set_trace()
       # self.objectsTable.scrollTo(temp,QtGui.QAbstractItemView.PositionAtCenter)
       
 
@@ -1847,6 +1872,8 @@ parser.add_argument('-m', metavar='mask name', type=str, help='name of the mask 
 parser.add_argument('-xsize', metavar='xsize', type=int, help='xsize in pixels', default=2500)
 parser.add_argument('-ysize', metavar='ysize', type=int, help='ysize in pixels', default=1500)
 parser.add_argument('-v', metavar='version', type=str, help='input version (cosmos/carpy)', default='carpy')
+parser.add_argument('-i', metavar='indices', type=str, help='file with list of indices to show', default=None)
+
 args = parser.parse_args()
 
 # Check for the 1d spectrum files.
@@ -1858,4 +1885,4 @@ else:
    print('1D spectrum files already present. Copying objects file to backup')
    shutil.copy('{}_spec1D/{}_objects.fits'.format(args.m,args.m),'{}_spec1D/{}_objects_bkp.fits'.format(args.m,args.m))
       
-redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
+redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v, args.i)
