@@ -70,6 +70,31 @@ def readHW(filename):
    return eigen
    
 
+def readLATIS(filename_wave, filename_templates):
+   
+   wave = fits.getdata(filename_wave)
+   templates = fits.getdata(filename_templates)
+   
+   template1 = templates[:, 0]
+   template2 = templates[:, 1]
+   template3 = templates[:, 2]
+   template4 = templates[:, 3]
+   template5 = templates[:, 4]
+
+   
+   eigen = np.ndarray(len(wave),
+                         dtype={'names':('wave', 'flux1', 'flux2', 'flux3', 'flux4', 'flux5'), 
+                                'formats':(float, float, float, float, float, float)})
+   eigen['wave'] = wave
+   eigen['flux1'] = template1
+   eigen['flux2'] = template2
+   eigen['flux3'] = template3
+   eigen['flux4'] = template4
+   eigen['flux5'] = template5
+   
+   return eigen
+   
+
 # Read in the galaxy eigenspectrum
 eigen_galaxy = readeigen('spEigenGal-56436.fits')
 eigen_galaxy['flux2'] = eigen_galaxy['flux2']*-1
@@ -98,3 +123,8 @@ np.save('eigen_star.npy', eigen_star)
 # Read in the HW quasar templates
 quasar_eigen = readHW('Hewett2010_template.fits')
 np.save('quasar_HW.npy', quasar_eigen)
+
+# Read in the LATIS templates for z~2-3 galaxies
+latis_eigen = readLATIS('latis_wave.fits', 'latis_templates.fits')
+Table(latis_eigen).write('eigen_latis.fits', overwrite=True)
+np.save('eigen_latis.npy', latis_eigen)

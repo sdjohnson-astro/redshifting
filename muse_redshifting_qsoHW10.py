@@ -14,6 +14,7 @@ import argparse
 import pyqtgraph.parametertree as pt
 import redshift
 import shutil
+import mpdaf
 
 
 
@@ -48,155 +49,163 @@ def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,r
       spec['flux'][~np.isfinite(spec['error'])] = 0.0
       spec['error'][~np.isfinite(spec['error'])] = 0.0
       
-      index = np.where(spec['error'] == 0.0)
+      index = np.where((spec['error'] == 0.0) | ((spec['flux'] == 0.0) & (spec['error'] == 1.0)))
       spec['mask'][index] = 0.0
       
       return spec
 
-def getspec1Dname(mask, row, id):
+def getspec1Dname(mask, id):
+   path = '{}_spec1D'.format(mask)
    
-   return '{}_spec1D/{}_{}_{}.fits'.format(mask, mask, row, id)
+   return '{}/{}_spec1D.fits'.format(path, id)
 
 def getspec2Dname(mask,id):
-   return '{}/{}sum.fits'.format(mask,id)
+   path = '{}_spec1D'.format(mask)
 
-def getredshift1Dname(mask, row, id):
+   return '{}/{}_spec2D.fits'.format(path, id)
+
+def getredshift1Dname(mask, id):
+   path = '{}_spec1D'.format(mask)
    
-   return '{}_spec1D/{}_{}_{}_redshift.fits'.format(mask, mask, row, id)
+   return '{}/{}_redshift.fits'.format(path, id)
 
 #for CarPy output
-def createSpec1Dfiles(mask,version='carpy'):
-   print('Creating spec1D files')
+def createmusefiles(mask):
 
-   if version=='carpy':
-      # try: #Stupid Python 2/3 compatibility
-         # import cPickle as pickle
-      # except:
-         # import pickle
-      # gdict=pickle.load(open('{}.p'.format(mask),'rb'))
-      maskinfo=Table.read('{}/{}_maskinfo.fits'.format(mask,mask))
-      path = '{}_spec1D'.format(mask)
-      os.mkdir(path)
-      # nRows=len(gdict['objects'])#-1 #last row is 'trace'
-      nRows=len(maskinfo)#-1 #last row is 'trace'
-      rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
-      ids = Column(np.chararray(nRows, itemsize=20), name='id')
-      classes = Column(np.chararray(nRows, itemsize=6), name='class')
-      redshifts = Column(np.zeros(nRows), name='redshift')
-      qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
-      comments = Column(np.chararray(nRows, itemsize=100), name='comment')
-      extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
-      extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
-      extflag = Column(np.zeros(nRows,dtype=bool), name='extflag')
-      boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
-
-      objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag,boxes])
-      objects['comment'] = 'none'
-      objects['class'] = 'galaxy'
-      objects['quality'] = -1
-      # for i in range(nRows):
-      for i,target in enumerate(maskinfo):
-         # target=gdict['objects'][i]['setup']
-         if os.path.isfile(target['spec1d']):
-            spec1D=fits.getdata(target['spec1d'])
-            header=fits.getheader(target['spec1d'])
-            flux1Draw=spec1D[0,:] #No flux calibration
-            error1Draw=spec1D[1,:]
-            flux1D=spec1D[4,:] #Craptastic flux calibration
-            error1D=spec1D[5,:]
-            wave=(np.arange(header['NAXIS1'])+1-header['CRPIX1'])*header['CD1_1']+header['CRVAL1']
-            if header['DC-FLAG']:
-               wave=np.power(10,wave)
-            #Convert wavelengths to vacuum from air
-            #s = 1e4 / wave
-            #n = (1 + 0.00008336624212083 + 0.02408926869968 / (130.1065924522 - s**2)
-            #     + 0.0001599740894897 / (38.92568793293 - s**2))
-            #wave*=n
-            spec = formatspectrum(wave, flux1D, error1D,raw=flux1Draw,rawerr=error1Draw)
-            objID=target['object']
-            objects[i]['id'] = objID
-            if target['smf_type']=='HOLE': 
-               objects[i]['class']='star'
-               objects[i]['alignbox']=True
-            objects[i]['extpos']=header['EXTRPOS']
-            objects[i]['extaper']=header['APER']
-         else:
-            print('File is missing: {}'.format(target['spec1d']))
-            objects[i]['id']=target['object']
-            continue
-         savename = getspec1Dname(mask, i+1, objID)
-         fits.writeto(savename, spec)
-      objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)
-   elif version=='cosmos':
-      print('Creating spec1D files')
-      spec1Darray = fits.getdata(mask + '_1spec.fits')
-      header1D = fits.getheader(mask + '_1spec.fits')
-      # Create wavelength array
-      wave = header1D['CRVAL1'] + np.arange(header1D['NAXIS1'])*header1D['CDELT1']
-      nRows = spec1Darray.shape[1]
-      path = '{}_spec1D'.format(mask)
-      os.mkdir(path)
-
-      rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
-      ids = Column(np.chararray(nRows, itemsize=20), name='id')
-      classes = Column(np.chararray(nRows, itemsize=6), name='class')
-      redshifts = Column(np.zeros(nRows), name='redshift')
-      qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
-      comments = Column(np.chararray(nRows, itemsize=100), name='comment')
-      #Things below here are just included for consistency with the carpy format...
-      extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
-      extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
-      extflag = Column(np.zeros(nRows,dtype=bool), name='extflag')
-      boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
-      # objects = Table([rows, ids, classes, redshifts, qualities, comments])
-      objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag])
-      objects['comment'] = 'none'
-      
-      for i in range(nRows):
-         flux1Draw = spec1Darray[0, i, :]
-         error1Draw = spec1Darray[1, i, :]
-         flat1D = spec1Darray[2, i, :]
-         arc1D = spec1Darray[3, i, :]
-         flux1D = spec1Darray[4, i, :]
-         error1D = spec1Darray[5, i, :]
-         spec = formatspectrum(wave, flux1D, error1D, 1.0, 0.0, flat1D, arc1D)
-         apnum1D = header1D['APNUM{}'.format(i+1)]
-         apnum1Darray = apnum1D.split(' ')
-         id = apnum1Darray[1]
-         savename = getspec1Dname(mask, i+1, id)
-         fits.writeto(savename, spec)
-         objects[i]['id'] = id
-         print(i+1)         
-      objects['class'] = 'galaxy'
-      objects['quality'] = -1  
-      objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)         
-
-
-class ldss3_redshiftgui:
-   """Defining the GUI class for LDSS3 redshift assignment"""
+   #if version=='cosmos':
+   #   print('Creating spec1D files')
+   #   spec1Darray = fits.getdata(mask + '_1spec.fits')
+   #   header1D = fits.getheader(mask + '_1spec.fits')
+   #   # Create wavelength array
+   #   wave = header1D['CRVAL1'] + np.arange(header1D['NAXIS1'])*header1D['CDELT1']
+   #   nRows = spec1Darray.shape[1]
+   #   path = '{}_spec1D'.format(mask)
+   #   os.mkdir(path)
+   #
+   #   rows = Column(np.arange(nRows, dtype='int') + 1, name='row')
+   #   ids = Column(np.chararray(nRows, itemsize=20), name='id')
+   #   classes = Column(np.chararray(nRows, itemsize=6), name='class')
+   #   redshifts = Column(np.zeros(nRows), name='redshift')
+   #   qualities = Column(np.zeros(nRows, dtype='int') - 1, name='quality')
+   #   comments = Column(np.chararray(nRows, itemsize=100), name='comment')
+   #
+   #   extpos = Column(np.zeros(nRows,dtype='float'), name='extpos')
+   #   extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
+   #   extflag = Column(np.zeros(nRows,dtype=bool), name='extflag')
+   #   boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
+   #   # objects = Table([rows, ids, classes, redshifts, qualities, comments])
+   #   objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag])
+   #   objects['comment'] = 'none'
+   #   
+   #   for i in range(nRows):
+   #      flux1Draw = spec1Darray[0, i, :]
+   #      error1Draw = spec1Darray[1, i, :]
+   #      flat1D = spec1Darray[2, i, :]
+   #      arc1D = spec1Darray[3, i, :]
+   #      flux1D = spec1Darray[4, i, :]
+   #      error1D = spec1Darray[5, i, :]
+   #      spec = formatspectrum(wave, flux1D, error1D, 1.0, 0.0, flat1D, arc1D)
+   #      apnum1D = header1D['APNUM{}'.format(i+1)]
+   #      apnum1Darray = apnum1D.split(' ')
+   #      id = apnum1Darray[1]
+   #      savename = getspec1Dname(mask, i+1, id)
+   #      fits.writeto(savename, spec)
+   #      objects[i]['id'] = id
+   #      print(i+1)         
+   #   objects['class'] = 'galaxy'
+   #   objects['quality'] = -1  
+   #   objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)  
    
-   def __init__(self, mask, xsize=1000, ysize=1000, version='carpy'):
+   print('Creating spec1D and 2D files')
+   objects = Table.read('{}.dat'.format(mask), format='ascii.fixed_width')
+   objects['class'] = 'galaxy'
+   objects['quality'] = -1
+   objects['redshift'] = 0.0
+   objects['comment'] = 'none                                                                                                  '
+   
+   # Create spec1D files
+   path = '{}_spec1D'.format(mask)
+   os.mkdir(path)
+
+   # Crate object file
+   objects.write('{}_spec1D/{}_objects.fits'.format(mask, mask), overwrite=True)
+   
+   
+   cube = mpdaf.obj.Cube('{}.fits'.format(mask))
+   data = np.array(cube.data)
+   dimW, dimY, dimX = np.shape(data)
+   wave = cube[:, 0, 0].wave.coord(np.arange(0, cube.shape[0], 1.0))
+   wcs = cube.wcs
+   for object in objects:
+      
+      # Get the 1D spectrum
+      print('{}   {}'.format(object['row'], object['id']))
+      
+      spec = cube.aperture((object['dec'], object['ra']), object['radius'])
+      flux = np.array(spec.data)
+      ivar = np.array(1/(spec.var*1.4))
+      error = np.sqrt(1/ivar)
+      spec = formatspectrum(wave, flux, error)
+      
+      # Save the 1D spectrum
+      savename = getspec1Dname(mask, object['id'])
+      print(savename)
+      fits.writeto(savename, spec, overwrite=True)
+
+      # Get the 2D spectrum
+      yx = wcs.sky2pix((object['dec'], object['ra']))[0]
+      y = yx[0]
+      x = yx[1]
+      
+      #print('{}'.format(object['id']))
+      #print('y, x={}, {}'.format(y, x))
+      #print(np.shape(data))
+      minx = int(x-0.6/0.2)
+      if minx < 0:
+          minx = 0
+      
+      maxx = int(x+0.6/0.2)
+      if maxx >= dimX:
+          maxx = dimX - 1
+      
+      miny = int(y-3.0/0.2)
+      if miny < 0:
+          miny = 0
+
+      maxy = int(y+3.0/0.2)
+      if maxy >= dimY:
+          maxy = dimY - 1
+      #print('x={}   {} to {}'.format(x, minx, maxx))
+      #print('y={}   {} to {}'.format(y, miny, maxy))
+      
+      spec2D = data[:, miny:maxy, minx:maxx]
+      spec2D = np.nansum(spec2D, axis=2)
+      #print('spec2D = {}'.format(np.shape(spec2D)))
+      #print('')
+      
+      savename = getspec2Dname(mask, object['id'])
+      fits.writeto(savename, spec2D, overwrite=True)
+      
+   
+   
+   #print(objects)
+     
+
+
+class muse_redshiftgui:
+   """Defining the GUI class for MUSE redshift assignment"""
+   
+   def __init__(self, mask, xsize=1000, ysize=1000):
       
       self.mask = mask
       self.xsize = xsize
       self.ysize = ysize
-      self.version = version
-      #Read in the extraction profile for CarPy version
-      if self.version=='carpy':
-         try:
-            # import pickle
-            # gdict=pickle.load(open('{}.p'.format(mask),'rb'))
-            # self.exttrace=gdict['trace'][0]
-            self.exttrace=fits.getdata('{}/{}_trace.fits'.format(mask,mask))
-         except:
-            print('Couldn\'t read extraction trace file')
       
-      # Read in the 1d and 2d files
-      if self.version=='cosmos':
-         self.spec1Darray = fits.getdata(mask + '_1spec.fits')
-         self.header1D = fits.getheader(mask + '_1spec.fits')
-         self.spec2Darray = fits.getdata(mask + '_big.fits')
-         self.header2D = fits.getheader(mask + '_big.fits')
+      # Read in the data cube
+      self.cube = mpdaf.obj.Cube('{}.fits'.format(self.mask))
+      self.whitelight = np.rot90(fits.getdata('{}_WHITE.fits'.format(self.mask)), 3)
+      self.cube_wcs = self.cube.wcs
+      self.wave = self.cube[:, 0, 0].wave.coord(np.arange(0, self.cube.shape[0], 1.0))
             
       path = '{}_spec1D'.format(mask)
       self.objects = Table.read('{}/{}_objects.fits'.format(path, mask))
@@ -216,6 +225,8 @@ class ldss3_redshiftgui:
       self.mask_left =  np.array([0.0, 0.0])
       self.mask_right =  np.array([0.0, 0.0])
       
+      self.object_labelled = False
+      
       
       
       # Get the GUI ready
@@ -225,6 +236,40 @@ class ldss3_redshiftgui:
       # Set the widget size
       self.widget.resize(self.xsize, self.ysize)
       
+      # Create the white-light image gui
+      #self.widget_whitelight = QtGui.QWidget()       # Define a top-level widget
+      #self.widget_whitelight.resize(np.shape(self.whitelight)[0]*5, np.shape(self.whitelight)[1]*5)
+      #self.plot_whitelight_win = pg.GraphicsLayoutWidget()
+      #self.plot_whitelight_plot = self.plot_whitelight_win.addPlot()  
+      #self.plot_whitelight = pg.ImageItem(border='w')
+      #self.plot_whitelight_plot.addItem(self.plot_whitelight)
+      #self.plot_whitelight_plot.setMouseEnabled(x=False, y=False)
+      #self.plot_whitelight_hist = pg.HistogramLUTWidget()
+      #self.plot_whitelight_hist.setImageItem(self.plot_whitelight)
+      #self.plot_whitelight_win.setAspectLocked(True)
+      #
+      #cm = self.plot_whitelight_hist.gradient.colorMap()
+      #cm.pos=np.array([1.,0.]) #is this really the easiest way to make white->black into black->white?
+      #self.plot_whitelight_hist.gradient.setColorMap(cm)
+      #self.layout_whitelight = QtGui.QGridLayout()
+      #self.widget_whitelight.setLayout(self.layout_whitelight)
+      #self.layout_whitelight.addWidget(self.plot_whitelight_win, 0, 0)
+      #self.layout_whitelight.addWidget(self.plot_whitelight_hist, 0, 1)
+
+      self.whitelight_win = QtGui.QMainWindow()
+      self.whitelight_win.resize(800,800)
+      self.whitelight_view = pg.ImageView()
+      self.whitelight_win.setCentralWidget(self.whitelight_view)
+      self.whitelight_win.show()
+      self.whitelight_win.setWindowTitle('pyqtgraph example: ImageView')
+      cm = self.whitelight_view.getHistogramWidget().gradient.colorMap()
+      cm.pos=np.array([1.,0.])
+      self.whitelight_view.setColorMap(cm)
+
+      #self.draw_whitelight()
+      
+      #self.widget_whitelight.show()
+      #self.app.exec_()
       
       # Set the background plotting widget
       
@@ -260,7 +305,6 @@ class ldss3_redshiftgui:
       cm = self.plot_spec2D_hist.gradient.colorMap()
       cm.pos=np.array([1.,0.]) #is this really the easiest way to make white->black into black->white?
       self.plot_spec2D_hist.gradient.setColorMap(cm)
-      
       # self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
       
       # Set the 1D spectrum
@@ -283,8 +327,7 @@ class ldss3_redshiftgui:
       
       self.mouse_x_spec1D = 0.0
       self.mouse_y_spec1D = 0.0
-      self.mouse_x_redshift = 0.0
-      self.mouse_y_redshift = 0.0
+      
       self.mouse_x_spec2D = 0.0
       self.mouse_y_spec2D = 0.0
       
@@ -435,25 +478,26 @@ class ldss3_redshiftgui:
       
       
       self.paramSpec = [
-              dict(name='z=', type='str', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
+              dict(name='z=', type='float', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
               dict(name='quality:', type='str', value='', readonly=True),
               dict(name='class:', type='str', value='', readonly=True), 
               dict(name='row:', type='str', value='', readonly=True),
               dict(name='id:', type='str', value='', readonly=True), 
+              dict(name='x, y:', type='str', value='(0.0, 0.0)', readonly=True), 
               dict(name='Show lines', type='bool', value=True),
-              dict(name='Show trace', type='bool', value=True),
-              dict(name='Show raw', type='bool', value=False),
-              dict(name='Bad Extraction:', type='bool', value=False)
+              dict(name='r=', type='float', value=0.8, step=0.2, limits=[0.0, None]),
+              dict(name='Re-extract', type='action')
               # dict(name='extraction center:', type='str', value='', readonly=True)
               # dict(name='extraction aper:', type='str', value='', readonly=True)
            ]
            
       self.param = pt.Parameter.create(name='Options', type='group', children=self.paramSpec)
       #Redraw when the boolean option buttons are pressed
-      self.param.children()[5].sigValueChanged.connect(self.draw)
       self.param.children()[6].sigValueChanged.connect(self.draw)
-      self.param.children()[7].sigValueChanged.connect(self.draw)
-      self.param.children()[8].sigValueChanged.connect(self.setExtFlag)
+      self.param.children()[8].sigStateChanged.connect(self.reExtract)
+#      self.param.children()[6].sigValueChanged.connect(self.draw)
+#      self.param.children()[7].sigValueChanged.connect(self.draw)
+#      self.param.children()[8].sigValueChanged.connect(self.setExtFlag)
       self.tree = pt.ParameterTree()
       self.tree.setParameters(self.param)
 
@@ -514,13 +558,37 @@ class ldss3_redshiftgui:
       self.app.exec_()
       
    
+   def reExtract(self):
+       
+       print('Re-extracting!')
+       self.objects[self.row-1]['radius'] = self.param['r=']
+       
+       # Get the 1D spectrum
+       object = self.objects[self.row-1]
+       spec = self.cube.aperture((object['dec'], object['ra']), object['radius'])
+       flux = np.array(spec.data)
+       ivar = np.array(1/(spec.var*1.4))
+       error = np.sqrt(1/ivar)
+       
+       spec = formatspectrum(self.wave, flux, error)
+      
+       # Save the 1D spectrum
+       savename = getspec1Dname(self.mask, object['id'])
+       print(savename)
+       fits.writeto(savename, spec, overwrite=True)
+       
+       
+       self.setTable()
+       self.setSpec()
+       self.draw()
+   
    def updateComment(self, event):
       
       self.objects[self.row-1]['comment'] = self.comment_text.text()
          
    def setTable(self):
       
-      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'extflag','row','comment']))
+      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'comment']))
    
    def goToObject(self):
       
@@ -542,7 +610,7 @@ class ldss3_redshiftgui:
    def setRedshiftHI1215(self):
          wave0 = 1215.24
          self.z = self.mouse_x_spec1D/wave0 - 1
-         #self.fitObjectAtRedshift()
+         self.fitObjectAtRedshift()
          self.objects[self.row-1]['redshift'] = self.z
          self.param['z='] =  '{:0.5f}'.format(self.z)
          self.draw()
@@ -958,9 +1026,9 @@ class ldss3_redshiftgui:
       self.plot_redshift.setYRange(y0_new, y1_new, padding=0)
 
    def zoom_default(self):
-      q1,q2=np.percentile(self.flux1D[self.spec['mask'].astype('bool')],[1,99])
-      q1 = np.min([0.0, q1])
-      self.plot_spec1D.setYRange(-0.05*q2,2*q2,padding=0)
+      q1,q2=np.percentile(self.flux1D[self.spec['mask'].astype('bool')],[0.1,99.9])
+      q1 = np.min([0.0, q1, -0.1*q2])
+      self.plot_spec1D.setYRange(q1,2*q2,padding=0)
       self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
 
    
@@ -1312,8 +1380,9 @@ class ldss3_redshiftgui:
       if self.objects[self.row-1]['class'] == 'hizgal':
          
          z = self.z
-         eigenvalues, model, chi2pdf = redshift.fitatz_latis(spec, z)
-         spec['model'] = model
+         if z > 2.5:
+            eigenvalues, model, chi2pdf = redshift.fitatz_latis(spec, z)
+            spec['model'] = model
          
          
       print('Redshift assigned by hand {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
@@ -1358,7 +1427,7 @@ class ldss3_redshiftgui:
          
       if self.objects[self.row-1]['class'] == 'quasar':
          
-         redshifts = redshift.findz_qso(spec, zmin=self.z-0.01, zmax=self.z+0.01, dz=0.001)
+         redshifts = redshift.findz_qso(spec, zmin=self.z-0.01, zmax=self.z+0.01, dz=0.0001)
          
          minIndex = np.argmin(redshifts['chi2_pdf'])
          z = redshifts[minIndex]['z']
@@ -1388,31 +1457,34 @@ class ldss3_redshiftgui:
          redshifts = unique(redshifts, keys='z')
          redshifts.sort('z')
          self.redshifts = redshifts
-         
+      
+      self.model1D = spec['model']
+      self.spec = spec
+      
       print('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
       self.z = z
-      self.param['z='] =  '{:0.5f}'.format(self.z)       
+      self.param['z='] =  '{:0.5f}'.format(self.z)      
       self.save()
       self.draw()
       
          
    def redshiftObject(self):
       
-      spec = self.spec
+      #spec = self.spec
       
-      nGoodPix = np.sum(spec['mask'])
+      nGoodPix = np.sum(self.spec['mask'])
       if nGoodPix > 5:
       
       
          if self.objects[self.row-1]['class'] == 'galaxy':
             
-            redshifts = redshift.findz_galaxy(spec, zmin=-0.01, zmax=1.5, dz=0.0005)
+            redshifts = redshift.findz_galaxy(self.spec, zmin=-0.01, zmax=1.5, dz=0.0003)
                      
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
             
-            redshifts_fine = redshift.findz_galaxy(spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
+            redshifts_fine = redshift.findz_galaxy(self.spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
             
             redshifts = vstack((Table(redshifts), Table(redshifts_fine)))
             
@@ -1428,50 +1500,68 @@ class ldss3_redshiftgui:
             
             
             
-            eigenvalues, model, chi2pdf = redshift.fitatz_galaxy(spec, z)
-            spec['model'] = model
+            eigenvalues, model, chi2pdf = redshift.fitatz_galaxy(self.spec, z)
+            self.spec['model'] = model
             
             
          if self.objects[self.row-1]['class'] == 'star':
             
-            redshifts = redshift.findz_star(spec, zmin=-0.01, zmax=0.01, dz=0.0001)
+            redshifts = redshift.findz_star(self.spec, zmin=-0.01, zmax=0.01, dz=0.0001)
             
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
-            eigenvalues, model, chi2pdf = redshift.fitatz_star(spec, z)
-            spec['model'] = model  
+            eigenvalues, model, chi2pdf = redshift.fitatz_star(self.spec, z)
+            self.spec['model'] = model  
             
             
          if self.objects[self.row-1]['class'] == 'quasar':
             
-            redshifts = redshift.findz_qso(spec, zmin=-0.01, zmax=4.0, dz=0.001)
+            redshifts = redshift.findz_qso_hw(self.spec, zmin=0.6, zmax=1.4, dz=0.0001)
             
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
-            eigenvalues, model, chi2pdf = redshift.fitatz_qso(spec, z)
-            spec['model'] = model
+            
+            #redshifts_fine = redshift.findz_qso_hw(self.spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
+            #
+            #redshifts = vstack((Table(redshifts), Table(redshifts_fine)))
+            #
+            #redshifts = unique(redshifts, keys='z')
+            #
+            #redshifts.sort('z')
+            #
+            #
+            #minIndex = np.argmin(redshifts['chi2_pdf'])
+            #z = redshifts[minIndex]['z']
+            #
+            #redshifts = np.array(redshifts)            
+            
+            
+            
+            eigenvalues, model, chi2_pdf = redshift.fitatz_qso_hw_poly(self.spec, z)
+            self.spec['model'] = model
             
          
          if self.objects[self.row-1]['class'] == 'hizgal':
             
-            redshifts = redshift.findz_latis(spec)
+            redshifts = redshift.findz_latis(self.spec)
             
             minIndex = np.argmin(redshifts['chi2_pdf'])
             print(Table(redshifts))
             z = redshifts[minIndex]['z']
-            eigenvalues, model, chi2pdf = redshift.fitatz_latis(spec, z)
-            spec['model'] = model
+            eigenvalues, model, chi2pdf = redshift.fitatz_latis(self.spec, z)
+            self.spec['model'] = model
             
             
          
          print('Redshifting {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],
                                                         self.objects[self.row-1]['id'], z))
-         
+         print()
          self.objects[self.row-1]['redshift'] = z
          self.z = z
          self.redshifted = 1
          self.redshifts = Table(redshifts)
-         self.param['z='] =  '{:0.5f}'.format(self.z)      
+         self.model1D = self.spec['model']
+         self.param['z='] =  '{:0.5f}'.format(self.z)
          self.save()
          self.draw()
          
@@ -1490,18 +1580,17 @@ class ldss3_redshiftgui:
       path = '{}_spec1D'.format(self.mask)
       self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
 
-      savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
-                               self.objects[self.row-1]['id'])
+      savename = getspec1Dname(self.mask, self.objects[self.row-1]['id'])
       if not os.path.isfile(savename):
          return
       fits.writeto(savename, self.spec, overwrite=True)
       
       # If we have a redshift array, store it
       if self.redshifted == 1:
-         savename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
-                                  self.objects[self.row-1]['id'])
+         savename = getredshift1Dname(self.mask, self.objects[self.row-1]['id'])
          self.redshifts.write(savename, overwrite=True)
-         
+      
+      print(Table(self.spec))
       print('Saved')   
       # if os.path.isfile(path):
       #    savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
@@ -1521,16 +1610,10 @@ class ldss3_redshiftgui:
 
    def autoMask(self):
       """Automatically mask things below and above some range, and the A band"""
-      if (self.spec['wave'][0]<4000): #LDSS3
-         low_cut=5000
-         high_cut=9800
-      else: #IMACS
-         low_cut=5200
-         high_cut=9275
-      aband=[7588,7684]
+      
+      sky5580 = [5578.5 - 7.0, 5578.5 + 7.0]
 
-      index = np.where((self.wave < low_cut) | (self.wave > high_cut)
-         | ((self.wave > aband[0]) & (self.wave < aband[1])) | (self.error1D == 0))
+      index = np.where(((self.wave > sky5580[0]) & (self.wave < sky5580[1])) | (self.error1D == 0))
       self.spec['mask'][index] = 0
       self.draw()
 
@@ -1681,33 +1764,40 @@ class ldss3_redshiftgui:
       #self.draw()
       
    def setSpec(self, autoRange=True):
+      
+      print('setSpect')
       """Set the spectrum to current row"""
       self.z = self.objects[self.row-1]['redshift']
+      self.id = self.objects[self.row-1]['id']
       self.comment_text.setText(self.objects[self.row-1]['comment'])
 
-      if self.version=='carpy':
-         self.id=self.objects[self.row-1]['id']
-         if not os.path.isfile(getspec1Dname(self.mask, self.row, self.id)):
-            print('Files for {} do not exist. Moving on.'.format(self.id))
-            self.redshifted=0
-            self.advance(1)
-            return
-         self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
-
-      elif self.version=='cosmos':
-         # Get the apnum header parameter
-         self.apnum1D = self.header1D['APNUM{}'.format(self.row)]
-         self.apnum2D = self.header2D['APNUM{}'.format(self.row)]
-         self.apnum1Darray = self.apnum1D.split(' ')
-         self.apnum2Darray = self.apnum2D.split(' ')
-         self.id = self.apnum1Darray[1]
-         self.y0=int(self.header2D['CSECT{}A'.format(self.row)])
-         self.y1=int(self.header2D['CSECT{}B'.format(self.row)])
-         self.y0 = int(float(self.apnum2Darray[2]))
-         self.y1 = int(float(self.apnum2Darray[3]))
-         self.flux2D = self.spec2Darray[self.y0:self.y1, :].transpose()
+      #if self.version=='carpy':
+      #   self.id=self.objects[self.row-1]['id']
+      #   if not os.path.isfile(getspec1Dname(self.mask, self.row, self.id)):
+      #      print('Files for {} do not exist. Moving on.'.format(self.id))
+      #      self.redshifted=0
+      #      self.advance(1)
+      #      return
+      #   self.flux2D=fits.getdata(getspec2Dname(self.mask,self.id)).transpose()
+      #
+      #elif self.version=='cosmos':
+      #   # Get the apnum header parameter
+      #   self.apnum1D = self.header1D['APNUM{}'.format(self.row)]
+      #   self.apnum2D = self.header2D['APNUM{}'.format(self.row)]
+      #   self.apnum1Darray = self.apnum1D.split(' ')
+      #   self.apnum2Darray = self.apnum2D.split(' ')
+      #   self.id = self.apnum1Darray[1]
+      #   self.y0=int(self.header2D['CSECT{}A'.format(self.row)])
+      #   self.y1=int(self.header2D['CSECT{}B'.format(self.row)])
+      #   self.y0 = int(float(self.apnum2Darray[2]))
+      #   self.y1 = int(float(self.apnum2Darray[3]))
+      #   self.flux2D = self.spec2Darray[self.y0:self.y1, :].transpose()
       
-      self.spec = fits.getdata(getspec1Dname(self.mask, self.row, self.id))
+      self.spec = fits.getdata(getspec1Dname(self.mask, self.id))
+      
+      print(Table(self.spec))
+      
+      self.flux2D = fits.getdata(getspec2Dname(self.mask, self.id))
       
       self.wave = self.spec['wave']
       self.flux1D = self.spec['flux']
@@ -1718,12 +1808,14 @@ class ldss3_redshiftgui:
       self.flat1D = self.spec['flat']
       self.arc1D = self.spec['arc']
 
-      self.extpos = self.objects[self.row-1]['extpos']
-      self.extaper = self.objects[self.row-1]['extaper']
+      print('Done reading')
+
       self.smoothSpec()
       
+      print('Done smoothing)')
+      
       # Check for redshift filename and read in if present.
-      redshiftFilename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
+      redshiftFilename = getredshift1Dname(self.mask,
                                            self.objects[self.row-1]['id'])
       if os.path.isfile(redshiftFilename):
          self.redshifted = 1
@@ -1733,22 +1825,31 @@ class ldss3_redshiftgui:
       else:
          self.redshifted = 0
          self.redshifts = None
-      
+      print('drawing')
       self.draw()
+      print('done drawing')
       self.plot_redshift.autoRange()
       if autoRange:
-         # self.plot_spec1D.autoRange()
+         self.plot_spec1D.autoRange()
          self.zoom_default()
-      self.plot_spec2D_hist.setHistogramRange(*np.percentile(self.flux2D,[0.1,99.9]))
+      #self.plot_spec2D_hist.setHistogramRange(*np.percentile(self.flux2D,[0.1,99.9]))
       self.plot_spec2D_hist.setLevels(*np.percentile(self.flux2D,[0.5,99.5]))
       
       self.param['row:'] =  '{}/{}'.format(self.row, self.nRows)
       self.param['id:'] =  '{}'.format(self.objects[self.row-1]['id'])
       self.param['class:'] =  '{}'.format(self.objects[self.row-1]['class'])
       self.param['z='] =  '{:0.5f}'.format(self.objects[self.row-1]['redshift'])
+      self.param['r='] =  '{:0.2f}'.format(self.objects[self.row-1]['radius'])
       self.param['quality:'] =  '{}'.format(self.objects[self.row-1]['quality'])
-      self.param['Bad Extraction:'] =  bool(self.objects[self.row-1]['extflag'])
-
+      
+      ra = self.objects[self.row-1]['ra']
+      dec = self.objects[self.row-1]['dec']
+      
+      yx = self.cube_wcs.sky2pix((dec, ra))[0]
+      self.param['x, y:'] = '{:0.2f}, {:0.2f}'.format(float(yx[1]), float(yx[0]))
+      
+      print('Set spec done')
+      print('')
       
    def mouseMoved_redshift(self, pos):
        """Keep track of where the mouse and update the xrange on the 2D plot to match the 1D"""
@@ -1759,7 +1860,6 @@ class ldss3_redshiftgui:
        self.mouse_x_redshift = self.plot_redshift.mapToView(pos).x()
        self.mouse_y_redshift = self.plot_redshift.mapToView(pos).y()
    
-       self.setTitle_redshift()
       
    def mouseMoved_spec2D(self, pos):
        """Keep track of where the mouse and update the xrange on the 2D plot to match the 1D"""
@@ -1775,43 +1875,12 @@ class ldss3_redshiftgui:
    def setTitle_1D(self):
       
       self.plot_spec1D.setTitle('{} {}/{}   {:0.2f}, {:.2E}'.format(self.id, self.row, self.nRows, self.mouse_x_spec1D, self.mouse_y_spec1D))
-   
-   def setTitle_redshift(self):
-      
-      self.plot_redshift.setTitle('{} {}/{}   {:0.4f}, {:.2E}'.format(self.id, self.row, self.nRows, self.mouse_x_redshift, self.mouse_y_redshift))
-   
       
    def draw(self):
-      
       # Clear plots
       self.plot_redshift.clear()
       self.plot_spec1D.clear()
       
-      
-      if self.redshifted == 1:
-         
-         self.plot_redshift.plot(self.redshifts['z'], self.redshifts['chi2_pdf'], 
-                                 pen=pg.mkPen('w', width=2), clear=True)
-         self.plot_redshift.addItem(pg.InfiniteLine(self.z,
-                                  pen=pg.mkPen('r', width=2, style=QtCore.Qt.DotLine)))
-         self.plot_redshift.autoRange()
-      self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
-                        pen=pg.mkPen('w', width=2), clear=True)
-      self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
-                        pen=pg.mkPen('b', width=2))
-      # self.plot_spec1D.plot(self.wave, self.spec['model']*self.spec['mask'],
-                        # pen=pg.mkPen('r', width=2))
-      self.plot_spec1D.plot(self.wave, self.spec['model'],pen=pg.mkPen('r', width=2))
-      # self.plot_spec1D.plot(self.wave, np.median(self.flux1D)*self.spec['mask'],pen=pg.mkPen('g', width=4)) #For debugging
-      if self.param['Show raw']:
-         self.plot_spec1D.plot(self.wave, self.flux1Draw*self.spec['mask'], 
-            pen=pg.mkPen('w', width=1,style=QtCore.Qt.DotLine))
-      #self.plot_spec1D.setYRange(np.percentile(self.flux1D, [5]),
-      #                         np.percentile(self.flux1D, [99.9]),
-      #                         padding=0)
-                               
-      self.setTitle_1D()
-      self.setTitle_redshift()
       if self.param['Show lines']:
          
          features = self.features
@@ -1852,28 +1921,79 @@ class ldss3_redshiftgui:
                                         pen=pg.mkPen('y', width=2, style=QtCore.Qt.DotLine),
                                         label='{} {:0.1f}'.format(feature['name'], feature['wave']),
                                         labelOpts={'position':0.8, 'rotateAxis':[1, 0]}))                        
+      
+      
+      
+      if self.redshifted == 1:
          
-      # self.plot_spec2D_view.addItem(self.plot_spec2D)
+         self.plot_redshift.plot(self.redshifts['z'], self.redshifts['chi2_pdf'], 
+                                 pen=pg.mkPen('w', width=1))
+         self.plot_redshift.addItem(pg.InfiniteLine(self.z,
+                                  pen=pg.mkPen('r', width=2, style=QtCore.Qt.DotLine)))
+         self.plot_redshift.autoRange()
+      print(np.shape(self.flux1D))
+      self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
+                        pen=pg.mkPen('w', width=1))
+      self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
+                        pen=pg.mkPen('b', width=1))
+
+      self.plot_spec1D.plot(self.wave, self.model1D,pen=pg.mkPen('r', width=2))
+                               
+      self.setTitle_1D()
+
+               
 
       # 2D spectrum
-
-      self.plot_spec2D.setImage(self.flux2D, xvals=self.wave, 
-                                levels=self.plot_spec2D_hist.getLevels(),#np.percentile(self.flux2D, [5, 99.5]), 
+      self.plot_spec2D.setImage(self.flux2D, xvals=self.wave,
+                                levels=self.plot_spec2D_hist.getLevels(),
                                 border=pg.mkPen('w', width=2))
+                                
       
-      if self.version=='carpy':
-         try: #need to remove those lines if they are there already...
-            map(self.plot_spec2D_plot.removeItem,[self.ext1,self.ext2,self.ext3])
-         except:
-            pass
-         if self.param['Show trace']:
-            try:
-               pen=pg.mkPen('r',width=2,style=QtCore.Qt.DashLine)
-               self.ext1=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace,pen=pen)
-               self.ext2=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace+self.extaper/2,pen=pen)
-               self.ext3=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace-self.extaper/2,pen=pen)
-            except:
-               print('Trace file not loaded')
+      # whitelight image
+      self.whitelight_view.setImage(self.whitelight, levels=[-2, 50])
+      
+      ra = self.objects[self.row-1]['ra']
+      dec = self.objects[self.row-1]['dec']
+      
+      yx = self.cube_wcs.sky2pix((dec, ra))[0]
+
+      
+      x = yx[1]
+      y = yx[0]
+      diameter = self.objects[self.row-1]['radius']*2/0.2
+      
+      #self.whitelight_view.removeItem(objectMarker)
+      if self.object_labelled == False:
+
+          self.objectMarker = pg.CircleROI(np.array([x - diameter/2, np.shape(self.whitelight)[1] - y - diameter/2]), [diameter, diameter],
+                                                pen=pg.mkPen('r', width=2),
+                                                movable=False, removable=False)
+          diameter = 10.0/0.2
+          self.objectMarker_outer = pg.CircleROI(np.array([x - diameter/2, np.shape(self.whitelight)[1] - y - diameter/2]), [diameter, diameter],
+                                                pen=pg.mkPen('r', width=1),
+                                                movable=False, removable=False)
+          self.whitelight_view.addItem(self.objectMarker)
+          self.whitelight_view.addItem(self.objectMarker_outer)
+          self.object_labelled = True
+          
+      else:
+
+          self.whitelight_view.removeItem(self.objectMarker)
+          self.whitelight_view.removeItem(self.objectMarker_outer)
+
+          self.objectMarker = pg.CircleROI(np.array([x - diameter/2, np.shape(self.whitelight)[1] - y - diameter/2]), [diameter, diameter],
+                                                pen=pg.mkPen('r', width=2),
+                                                movable=False, removable=False)
+          diameter = 10.0/0.2
+          self.objectMarker_outer = pg.CircleROI(np.array([x - diameter/2, np.shape(self.whitelight)[1] - y - diameter/2]), [diameter, diameter],
+                                                pen=pg.mkPen('r', width=1),
+                                                movable=False, removable=False)
+          self.whitelight_view.addItem(self.objectMarker)
+          self.whitelight_view.addItem(self.objectMarker_outer)
+          self.object_labelled = True
+         
+      #self.whitelight_view.autoLevels()
+      
 
       self.objectsTable.selectRow(self.row-1)
       self.objectsTable.scrollToItem(self.objectsTable.item(self.row-1,0),QtGui.QAbstractItemView.PositionAtCenter)
@@ -1884,22 +2004,20 @@ class ldss3_redshiftgui:
       
 
 
-
 # Set up the command line argument parser
-parser = argparse.ArgumentParser(description='Verify foreground/background quasars and measure absorbing gas around the foreground in the background quasar spectrum')
-parser.add_argument('-m', metavar='mask name', type=str, help='name of the mask to be redshifted', required=True)
+parser = argparse.ArgumentParser(description='Assign redshifts for sources in MUSE. Requires a MUSE datacube and input catalog file with object coordinates.')
+parser.add_argument('-m', metavar='muse cube filename', type=str, help='muse cube filename', required=True)
 parser.add_argument('-xsize', metavar='xsize', type=int, help='xsize in pixels', default=2500)
 parser.add_argument('-ysize', metavar='ysize', type=int, help='ysize in pixels', default=1500)
-parser.add_argument('-v', metavar='version', type=str, help='input version (cosmos/carpy)', default='carpy')
 args = parser.parse_args()
 
 # Check for the 1d spectrum files.
 if not os.path.isdir('{}_spec1D'.format(args.m)):
    print('Creating 1D spectrum files')
-   createSpec1Dfiles(args.m,args.v)
+   createmusefiles(args.m)
      
 else:
    print('1D spectrum files already present. Copying objects file to backup')
    shutil.copy('{}_spec1D/{}_objects.fits'.format(args.m,args.m),'{}_spec1D/{}_objects_bkp.fits'.format(args.m,args.m))
       
-redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v)
+redshiftgui = muse_redshiftgui(args.m, args.xsize, args.ysize)
