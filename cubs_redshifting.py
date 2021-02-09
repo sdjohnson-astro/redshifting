@@ -12,7 +12,7 @@ import numpy as np
 import glob
 import argparse
 import pyqtgraph.parametertree as pt
-import redshift
+from redshifting import redshift
 import shutil
 
 
