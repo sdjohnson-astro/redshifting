@@ -175,12 +175,13 @@ def createSpec1Dfiles(mask,version='carpy'):
 class ldss3_redshiftgui:
    """Defining the GUI class for LDSS3 redshift assignment"""
    
-   def __init__(self, mask, xsize=1000, ysize=1000, version='carpy',indfile=None):
+   def __init__(self, mask, xsize=1000, ysize=1000, version='carpy',indfile=None, nosave=False):
       
       self.mask = mask
       self.xsize = xsize
       self.ysize = ysize
       self.version = version
+      self.nosave=nosave
       #Read in the extraction profile for CarPy version
       if self.version=='carpy':
          try:
@@ -1463,9 +1464,12 @@ class ldss3_redshiftgui:
       
    
    def save(self):
-      
+
       self.setTable()
-# 
+
+      if self.nosave:
+         return
+
       path = '{}_spec1D'.format(self.mask)
       self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
 
@@ -1873,9 +1877,9 @@ parser.add_argument('-xsize', metavar='xsize', type=int, help='xsize in pixels',
 parser.add_argument('-ysize', metavar='ysize', type=int, help='ysize in pixels', default=1500)
 parser.add_argument('-v', metavar='version', type=str, help='input version (cosmos/carpy)', default='carpy')
 parser.add_argument('-i', metavar='indices', type=str, help='file with list of indices to show', default=None)
+parser.add_argument('--nosave', action='store_true',help='use this to not update any files')
 
 args = parser.parse_args()
-
 # Check for the 1d spectrum files.
 if not os.path.isdir('{}_spec1D'.format(args.m)):
    print('Creating 1D spectrum files')
@@ -1885,4 +1889,4 @@ else:
    print('1D spectrum files already present. Copying objects file to backup')
    shutil.copy('{}_spec1D/{}_objects.fits'.format(args.m,args.m),'{}_spec1D/{}_objects_bkp.fits'.format(args.m,args.m))
       
-redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v, args.i)
+redshiftgui = ldss3_redshiftgui(args.m, args.xsize, args.ysize, args.v, args.i, args.nosave)
