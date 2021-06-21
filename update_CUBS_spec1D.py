@@ -1,18 +1,16 @@
-#!/usr/bin/env python
-
 #This code revises redshifts from spectra that have been remade with better wavecal.
 #For Q=2 objects, It applies the masking from the old version and reruns redshift measurement.
 # If different is greater than some threshold, let me know.
 
-path_to_old_spectra='Q2339M3_spec1D_old/'
-masks=['Q2339M3']
+path_to_old_spectra='old/'
+masks=['Q0110i1','Q0110i2']
 
-#text=input('Running this will overwrite redshift table files with those in {:s}. If you\'re sure you want to run it, type "yes": '.format(path_to_old_spectra))
-#if text != 'yes':
-#   import sys
-#   sys.exit()
+text=input('Running this will overwrite redshift table files with those in {:s}. If you\'re sure you want to run it, type "yes": '.format(path_to_old_spectra))
+if text != 'yes':
+   import sys
+   sys.exit()
 
-import redshift
+from redshifting import redshift
 from shutil import copy
 from astropy.table import Table,Column,vstack,unique
 from astropy.io import fits
