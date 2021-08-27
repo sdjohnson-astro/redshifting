@@ -23,10 +23,10 @@ print(objects)
 ra_string, dec_string, objects['name'] = coord.coordstring(objects['ra'], objects['dec'])
 
 objects['row'] = np.arange(len(objects)) + 1
-if args.r == 0:
-   objects['radius'] = objects['r_Kron']*0.2
-else:
-   objects['radius'] = args.r
+#if args.r == 0:
+#   objects['radius'] = objects['r_Kron']*0.2
+#else:
+#   objects['radius'] = args.r
 objects = objects['row', 'id', 'name', 'ra', 'dec', 'radius']
 
 

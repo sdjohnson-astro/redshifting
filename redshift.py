@@ -3,8 +3,10 @@ import numpy as np
 #from astropy.table import Table, Column, Row
 from scipy.interpolate import interp1d, InterpolatedUnivariateSpline, UnivariateSpline
 from lmfit import Model, Parameters
+import corner
 import time
 import warnings
+from matplotlib import pyplot as plt
 
 # Set constants
 c_kms = 299792.458
@@ -1035,7 +1037,77 @@ def findz_latis(spec, zmin=2.5, zmax=5.0, dz=0.0005):
 
    
    return redshifts
+
+
+
+# Fit a galaxy model with a guess redshift and optionally low-order
+# polynomials to account for an flux calibration errors
+def fitz_galaxy_emcee(spec, zguess, fluxpoly=True, steps=5000, burn=2000, progress=True, printReport=True, saveCorner='', zMin=None, zMax=None):
    
+   flux_median = np.median(spec['flux'])
+   parameters = Parameters()
+   #                    (Name,      Value,            Vary,   Min,  Max,   Expr)
+   parameters.add_many(('z',        zguess,           True,  zMin,  zMax,  None),
+                       ('eigen1',   flux_median*0.4,  True,  None,  None,  None),
+                       ('eigen2',   flux_median*0.4,  True,  None,  None,  None),
+                       ('eigen3',   flux_median*0.1,  True,  None,  None,  None),
+                       ('eigen4',   flux_median*0.1,  True,  None,  None,  None),
+                       ('fluxcal0', 0.0,              fluxpoly,  None,  None,  None),
+                       ('fluxcal1', 0.0,              fluxpoly,  None,  None,  None),
+                       ('fluxcal2', 0.0,              fluxpoly,  None,  None,  None))
+   
+   galaxy_model = Model(eigensum_galaxy, missing='drop')
+   result = galaxy_model.fit(spec['flux'], wave=spec['wave'], weights=1/spec['error'],
+                             params=parameters, missing='drop')
+                             
+                             
+   emcee_kws = dict(steps=steps, burn=burn, is_weighted=True,
+                    progress=progress)
+   emcee_params = result.params.copy()
+   
+   result_emcee = galaxy_model.fit(spec['flux'], wave=spec['wave'], weights=1/spec['error'],
+                                   params=emcee_params, method='emcee', nan_policy='omit',
+                                   missing='drop', fit_kws=emcee_kws, show_titles=True)
+   result_emcee.conf_interval   
+                                
+   # find the maximum likelihood solution
+   highest_prob = np.argmax(result_emcee.lnprob)
+   hp_loc = np.unravel_index(highest_prob, result_emcee.lnprob.shape)
+   mle_soln = result_emcee.chain[hp_loc]
+   
+   #result_emcee.conf_interval()
+   
+   if printReport:
+      print(result_emcee.fit_report())
+      #print(result_emcee.ci_report())
+      
+      z_marginalized = np.percentile(result_emcee.flatchain['z'], [50])[0]
+      zErrUp = np.percentile(result_emcee.flatchain['z'], [84.1])[0] - np.percentile(result_emcee.flatchain['z'], [50])[0]
+      zErrDown = np.percentile(result_emcee.flatchain['z'], [50])[0] - np.percentile(result_emcee.flatchain['z'], [15.9])[0]
+      print('z = {:0.5f} +{:0.5f} -{:0.5f}'.format(z_marginalized, zErrUp, zErrDown))
+      
+      interval68 = np.percentile(result_emcee.flatchain['z'], [15.9, 84.1])
+      interval95 = np.percentile(result_emcee.flatchain['z'], [2.28, 97.7])
+      print('68% C.I:')
+      print(interval68)
+      
+      print('95% C.I:')
+      print(interval95)
+      
+      
+      
+   
+   if saveCorner != '':
+      emcee_corner = corner.corner(result_emcee.flatchain, labels=['z', 'eigen1', 'eigen2', 'eigen3', 'eigen4', 'fluxcal0', 'fluxcal1', 'fluxcal2'],
+                                   truths=mle_soln)
+      emcee_corner.savefig(saveCorner)
+      plt.close()
+      
+                             
+   return result_emcee
+
+
+
    
 # Fit a galaxy model with a guess redshift and optionally low-order
 # polynomials to account for an flux calibration errors
@@ -1056,6 +1128,12 @@ def fitz_galaxy(spec, zguess, fluxpoly=True):
    galaxy_model = Model(eigensum_galaxy, missing='drop')
    result = galaxy_model.fit(spec['flux'], wave=spec['wave'], weights=1/spec['error'],
                              params=parameters, missing='drop')
+                             
+                             
+   emcee_kws = dict(steps=500, burn=200, is_weighted=True,
+                    progress=True)
+   emcee_params = result.params.copy()
+                             
    return result
    
 
