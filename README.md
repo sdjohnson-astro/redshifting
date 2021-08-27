@@ -17,7 +17,7 @@ export PYTHONPATH="$REDSHIFTING:$PYTHONPATH"
 * lmfit (https://lmfit.github.io/lmfit-py/)
 
 # Conda setup
-
+note: conda setup has not been tested recently.
 ```
 conda create -n redshifting
 conda install -n redshifting python=2 numpy scipy matplotlib pyqtgraph
