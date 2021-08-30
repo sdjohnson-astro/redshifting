@@ -45,7 +45,7 @@ objects = objects[objects['alignbox'] == False]
 print(objects)
 
 # Read in the first object
-object = objects[0]
+object = objects[10]
 spec = getspectrum(args.m, object['row'], object['id'])
 
 waveArray = spec['wave']
@@ -102,7 +102,7 @@ fig, ax = plt.subplots(1, figsize=(10, 7))
 ax.plot(wavecheck['wave'], wavecheck['sky'], color='black', drawstyle='steps-mid', label=r'$\rm median\ error$')
 ax.plot(wavecheck['wave'], result.best_fit, color='orange', label=r'$\mu = {:0.2f}, \rm FWHM={:0.2f} {}, {:0.0f} {}$'.format(mu, FWHM_Ang, '\ \AA', FWHM_kms, '\ km/s'))
 ax.axvline(wave_vac, color='blue', label=r'$\rm 5578.5\ (vacuum)$')
-ax.axvline(wave_air, color='red', linestyle=':', label=r'$5\rm 5576.95\ (air)$')
+ax.axvline(wave_air, color='red', linestyle=':', label=r'$\rm 5576.95\ (air)$')
 
 ax.legend()
 ax.minorticks_on()
