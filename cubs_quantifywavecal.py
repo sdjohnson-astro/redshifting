@@ -10,6 +10,7 @@ from pydl.goddard.astro import airtovac
 from astropy import units as u
 from astropy.io import fits
 from astropy.stats import median_absolute_deviation
+from scipy.stats import norm
 
 dv_vacair = 82.68 # km/s at 7000 Ang. At 4000 and 10000 it is 84.76 and 82.46 km/s respectively so constant dv is a very good approximation.
 c_kms = 299792.458
@@ -50,7 +51,9 @@ def getsky(id):
    
    sky = sky[(sky['wave'] > 5550) & (sky['wave'] < 5610)]
    
-   return sky
+   cdelt1 = header['CDELT1']
+   
+   return sky, cdelt1
  
 def gaussian(x, amp, cen, wid, a, b):
     """1-d gaussian: gaussian(x, amp, cen, wid)"""
@@ -62,7 +65,7 @@ objects['wave5580'] = np.nan
 for object in objects:
    
    try:
-      sky = getsky(object['id'])
+      sky, cdelt1 = getsky(object['id'])
       
       
       gmodel = Model(gaussian)
@@ -90,3 +93,32 @@ print('sigma = {:0.2f}'.format(np.std(objects['wave5580'])))
 print('resistant sigma = {:0.2f}'.format(median_absolute_deviation(objects['wave5580'])*1.486))
 print('dw(obs - vac) = {:0.2f}'.format(np.median(objects['wave5580']) - 5578.5))
 print('dw(obs - air) = {:0.2f}'.format(np.median(objects['wave5580']) - 5576.95))
+
+
+mu_median = np.median(objects['wave5580'])
+robust_sigma = median_absolute_deviation(objects['wave5580'])*1.486
+
+fig, ax = plt.subplots(1, figsize=(9, 7))
+
+bins = np.arange(5575, 5585, 0.25)
+x = np.arange(5575, 5585, 0.01)
+pdf = norm.pdf(x, mu_median, robust_sigma)
+
+
+ax.hist(objects['wave5580'], histtype='step', color='black', label=r'$\rm centroids\ for\ each\ slitlet$', bins=bins, density=True)
+ax.plot(x, pdf, color='grey', linestyle='--', label=r'$\rm outlier\ resistant\ fit\ median={:0.2f}\ \AA\ \sigma = {:0.2f}\ \AA$'.format(mu_median, robust_sigma))
+ax.axvline(5578.5, color='blue', label=r'$\rm 5578.5\ (vacuum)\ obs-vac = {:0.2f}\ \AA$'.format(mu_median - 5578.5))
+ax.axvline(5576.95, color='red', linestyle=':', label=r'$\rm 5576.95.5\ (air)\ obs-air = {:0.2f}\ \AA$'.format(mu_median - 5576.95))
+
+ax.plot([5578.5 - cdelt1/2, 5578.5 + cdelt1/2], [0.5, 0.5], color='orange', label=r'$\rm 1\ pixel = {:0.2f}\ \AA$'.format(cdelt1))
+
+ax.legend()
+ax.set_xlabel(r'$\rm observed\ wavelength\ [\AA]$')
+ax.set_ylabel(r'$\rm frequency$')
+
+ax.minorticks_on()
+fig.tight_layout()
+plt.savefig('{}_wavecal_scatter.pdf'.format(args.m))
+
+
+os.system('open {}_wavecal_scatter.pdf'.format(args.m))
