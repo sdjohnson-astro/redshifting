@@ -31,6 +31,7 @@ def gaussian(x, amp, cen, wid, a, b):
 parser = argparse.ArgumentParser(description='Correct wavelength and redshifts for air-vacuum issue.')
 parser.add_argument('-m', metavar='mask name', type=str, help='name of the mask to be summarized', required=True)
 parser.add_argument('-convert', metavar='convert air to vacuum?', type=bool, help='onvert air to vacuum?', required=False, default=False)
+parser.add_argument('-force', metavar='force convert air to vacuum regardless of fit results?', type=bool, help='force convert air to vacuum?', required=False, default=False)
 
 args = parser.parse_args()
 
@@ -135,7 +136,7 @@ os.system('open {}_wavecheck.pdf'.format(args.m))
 
 print('FWHM = {:0.2f} Ang or ~{:0.0f} km/s'.format(FWHM_Ang, FWHM_kms))
 
-if (inVacuum == False) & args.convert:
+if ((inVacuum == False) & args.convert) | (args.convert & args.force):
    
    print('')
    print('Converting air wavelength to vacuum and update redshifts')
