@@ -35,7 +35,7 @@ print(objects)
 
 
 # Function to get the sky spectrum for a source with input id
-def getsky(id):
+def getsky5580(id):
    
    specfilename = '{}{}_1dspec.fits'.format(directory_carpy, id)
    spec = fits.getdata(specfilename)
@@ -54,36 +54,97 @@ def getsky(id):
    cdelt1 = header['CDELT1']
    
    return sky, cdelt1
+
+
+# Function to get the sky spectrum for a source with input id
+def getsky8400(id):
+   
+   specfilename = '{}{}_1dspec.fits'.format(directory_carpy, id)
+   spec = fits.getdata(specfilename)
+   header = fits.getheader(specfilename)
+   
+   wave = header['CRVAL1'] + header['CDELT1']*np.arange(header['NAXIS1'])
+   skyflux = spec[2, :]
+   
+   
+   sky = Table()
+   sky['wave'] = wave
+   sky['sky'] = skyflux
+   
+   sky = sky[(sky['wave'] > 8377) & (sky['wave'] < 8418)]
+   
+   cdelt1 = header['CDELT1']
+   
+   return sky, cdelt1
+
+
+
+def fitsky5580(id):
+   
+   sky, cdelt1 = getsky5580(id)
+   
+   
+   gmodel = Model(gaussian)
+   
+   parameters = Parameters()
+   parameters.add_many(('amp',     np.max(sky['sky']) - np.min(sky['sky']), True, None,    None,    None),
+                       ('cen',     5578.5,                   True, 5570.0,  5590.0,  None),
+                       ('wid',     5.0,                      True, 1.0,     None,    None),
+                       ('a',       0.0,                      True, None,    None,    None),
+                       ('b',       np.min(sky['sky']), True, None,    None,    None))
+   
+   result = gmodel.fit(sky['sky'], params=parameters, x=sky['wave'])
+   
+   return result, cdelt1
+
+def fitsky8400(id):
+   
+   sky, cdelt1 = getsky8400(id)
+   
+   
+   gmodel = Model(gaussian)
+   
+   parameters = Parameters()
+   parameters.add_many(('amp',     np.max(sky['sky']) - np.min(sky['sky']), True, None,    None,    None),
+                       ('cen',     8401.484,                   True, 8390,  8410,  None),
+                       ('wid',     5.0,                      True, 1.0,     None,    None),
+                       ('a',       0.0,                      True, None,    None,    None),
+                       ('b',       np.min(sky['sky']), True, None,    None,    None))
+   
+   result = gmodel.fit(sky['sky'], params=parameters, x=sky['wave'])
+   print(result.fit_report())
+   
+   return result, cdelt1
+
  
 def gaussian(x, amp, cen, wid, a, b):
     """1-d gaussian: gaussian(x, amp, cen, wid)"""
-    return (amp / (np.sqrt(2*np.pi) * wid)) * np.exp(-(x-cen)**2 / (2*wid**2)) + a*x + b
+    return (amp / (np.sqrt(2*np.pi) * wid)) * np.exp(-(x-cen)**2 / (2*wid**2)) + a*(x - np.median(x)) + b
  
 
 #objects = objects[0:50]
 objects['wave5580'] = np.nan
+objects['wave8400'] = np.nan
 for object in objects:
    
+   # Try the 5580 sky line
    try:
-      sky, cdelt1 = getsky(object['id'])
-      
-      
-      gmodel = Model(gaussian)
-      
-      parameters = Parameters()
-      parameters.add_many(('amp',     np.max(sky['sky']) - np.min(sky['sky']), True, None,    None,    None),
-                          ('cen',     5578.5,                   True, 5570.0,  5590.0,  None),
-                          ('wid',     5.0,                      True, 1.0,     None,    None),
-                          ('a',       0.0,                      True, None,    None,    None),
-                          ('b',       np.min(sky['sky']), True, None,    None,    None))
-      
-      result = gmodel.fit(sky['sky'], params=parameters, x=sky['wave'])
+      result, cdelt1 = fitsky5580(object['id'])
       object['wave5580'] = result.best_values['cen']
-      print(result.fit_report())
+      
+   except:
+      print('Object files not found.')
+      
+   
+   # Try the 8400 sky line
+   try:
+      result, cdelt1 = fitsky8400(object['id'])
+      object['wave8400'] = result.best_values['cen']
+      
    except:
       print('Object files not found.')
 
-objects = objects[np.isfinite(objects['wave5580'])]
+objects = objects[np.isfinite(objects['wave5580']) & np.isfinite(objects['wave8400'])]
 
 print(objects['wave5580'])
 
@@ -98,25 +159,46 @@ print('dw(obs - air) = {:0.2f}'.format(np.median(objects['wave5580']) - 5576.95)
 mu_median = np.median(objects['wave5580'])
 robust_sigma = median_absolute_deviation(objects['wave5580'])*1.486
 
-fig, ax = plt.subplots(1, figsize=(9, 7))
+fig, ax = plt.subplots(2, figsize=(9, 7))
 
-bins = np.arange(5575, 5585, 0.25)
-x = np.arange(5575, 5585, 0.01)
+bins = np.arange(5578.5 - 300.0/c_kms*5578.5, 5578.5 + 600.0/c_kms*5578.5, 0.1)
+x = np.arange(5578.5 - 300.0/c_kms*5578.5, 5578.5 + 600.0/c_kms*5578.5, 0.01)
 pdf = norm.pdf(x, mu_median, robust_sigma)
 
 
-ax.hist(objects['wave5580'], histtype='step', color='black', label=r'$\rm centroids\ for\ each\ slitlet$', bins=bins, density=True)
-ax.plot(x, pdf, color='grey', linestyle='--', label=r'$\rm outlier\ resistant\ fit\ median={:0.2f}\ \AA\ \sigma = {:0.2f}\ \AA$'.format(mu_median, robust_sigma))
-ax.axvline(5578.5, color='blue', label=r'$\rm 5578.5\ (vacuum)\ obs-vac = {:0.2f}\ \AA$'.format(mu_median - 5578.5))
-ax.axvline(5576.95, color='red', linestyle=':', label=r'$\rm 5576.95.5\ (air)\ obs-air = {:0.2f}\ \AA$'.format(mu_median - 5576.95))
+ax[0].hist(objects['wave5580'], histtype='step', color='black', label=r'$\rm centroids\ for\ each\ slitlet$', bins=bins, density=True)
+ax[0].plot(x, pdf, color='grey', linestyle='--', label=r'$\rm outlier\ resistant\ fit\ median={:0.2f}\ \AA\ \sigma = {:0.2f}\ \AA$'.format(mu_median, robust_sigma))
+ax[0].axvline(5578.5, color='blue', label=r'$\rm 5578.5\ (vacuum)\ obs-vac = {:0.2f}\ \AA$'.format(mu_median - 5578.5))
+ax[0].axvline(5576.95, color='red', linestyle=':', label=r'$\rm 5576.95\ (air)\ obs-air = {:0.2f}\ \AA$'.format(mu_median - 5576.95))
+ax[0].plot([5578.5 - cdelt1/2, 5578.5 + cdelt1/2], [0.5, 0.5], color='blue', linestyle='-.', label=r'$\rm 1\ pixel = {:0.2f}\ \AA$'.format(cdelt1))
 
-ax.plot([5578.5 - cdelt1/2, 5578.5 + cdelt1/2], [0.5, 0.5], color='orange', label=r'$\rm 1\ pixel = {:0.2f}\ \AA$'.format(cdelt1))
+ax[0].legend()
+ax[0].set_ylabel(r'$\rm frequency$')
+ax[0].minorticks_on()
 
-ax.legend()
-ax.set_xlabel(r'$\rm observed\ wavelength\ [\AA]$')
-ax.set_ylabel(r'$\rm frequency$')
 
-ax.minorticks_on()
+
+bins = np.arange(8401.48 - 300.0/c_kms*8401.48, 8401.48 + 600.0/c_kms*8401.48, 0.1)
+x = np.arange(8401.48 - 300.0/c_kms*8401.48,  8401.48 + 600.0/c_kms*8401.48, 0.01)
+pdf = norm.pdf(x, mu_median, robust_sigma)
+
+mu_median = np.median(objects['wave8400'])
+robust_sigma = median_absolute_deviation(objects['wave8400'])*1.486
+pdf = norm.pdf(x, mu_median, robust_sigma)
+
+
+ax[1].hist(objects['wave8400'], histtype='step', color='black', label=r'$\rm centroids\ for\ each\ slitlet$', bins=bins, density=True)
+ax[1].plot(x, pdf, color='grey', linestyle='--', label=r'$\rm outlier\ resistant\ fit\ median={:0.2f}\ \AA\ \sigma = {:0.2f}\ \AA$'.format(mu_median, robust_sigma))
+
+ax[1].axvline(8401.48, color='blue', label=r'$\rm 8401.48\ (vacuum)\ obs-vac = {:0.2f}\ \AA$'.format(mu_median - 8401.48))
+ax[1].axvline(8399.17578, color='red', linestyle=':', label=r'$\rm 8399.18\ (air)\ obs-air = {:0.2f}\ \AA$'.format(mu_median - 8399.18))
+ax[1].plot([8401.48 - cdelt1/2, 8401.48 + cdelt1/2], [0.5, 0.5], color='blue', linestyle='-.', label=r'$\rm 1\ pixel = {:0.2f}\ \AA$'.format(cdelt1))
+ax[1].minorticks_on()
+ax[1].legend()
+
+ax[1].set_ylabel(r'$\rm frequency$')
+ax[1].set_xlabel(r'$\rm observed\ wavelength\ [\AA]$')
+
 fig.tight_layout()
 plt.savefig('{}_wavecal_scatter.pdf'.format(args.m))
 
