@@ -818,8 +818,7 @@ def findz_qso_hw(spec, zmin=0.0, zmax=3.0, dz=0.0005):
 # Does not include IGM attenuation
 def findz_galaxy(spec, zmin=-0.1, zmax=1.5, dz=0.0001):
    
-   
-   
+     
    # Create an array of Lya absorption
    zs = np.arange(zmin, zmax, dz)
    zeros = np.zeros(len(zs))
@@ -857,6 +856,7 @@ def findz_galaxy(spec, zmin=-0.1, zmax=1.5, dz=0.0001):
    spec[index]['mask'] = 0
    
    index = np.where((spec['mask'] == 0) | (spec['error'] == 0.0))
+   spec[index]['mask'] = 0
    one_over_sigmasquared[index] = 0.0
    
    index = np.where(spec['mask'] == 0)

@@ -1411,7 +1411,7 @@ class ldss3_redshiftgui:
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
             
-            redshifts_fine = redshift.findz_galaxy(spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
+            redshifts_fine = redshift.findz_galaxy(spec, zmin=z-0.003, zmax=z+0.003, dz=0.0001)
             
             redshifts = vstack((Table(redshifts), Table(redshifts_fine)))
             

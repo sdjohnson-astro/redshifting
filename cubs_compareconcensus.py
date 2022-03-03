@@ -40,7 +40,7 @@ print(objects_class)
 
 print('************************************************************************')
 print('redshift mis-match')
-objects_dv = objects[np.abs(objects['dv']) > 20.0]
+objects_dv = objects[np.abs((objects['dv']) > 20.0) & (objects['quality'] >= 1)]
 print(objects_dv)
 
 
