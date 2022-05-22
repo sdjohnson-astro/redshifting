@@ -52,11 +52,11 @@ if (len(index) == len(objects1)) & (len(index) == len(objects2)):
    objects = objects['row', 'id', 'qualityA', 'qualityB', 'redshiftA', 'redshiftB', 'dv(A-B)', 'classA', 'classB', 'commentA', 'commentB']
    print(objects)
    
-   objects['redshift'].format = ':0.4f'
+   #objects['redshift'].format = '0.4f'
 
-   objects['redshiftA'].format = ':0.4f'
-   objects['redshiftB'].format = ':0.4f'
-   objects['redshift_final'].format = ':0.4f'
+   objects['redshiftA'].format = '0.4f'
+   objects['redshiftB'].format = '0.4f'
+   #objects['redshift_final'].format = '0.4f'
    
    objects = objects[(objects['qualityA'] >= 1) | (objects['qualityB'] >= 1)]
    

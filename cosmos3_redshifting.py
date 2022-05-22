@@ -14,7 +14,7 @@ import argparse
 import pyqtgraph.parametertree as pt
 import redshift
 import shutil
-import mpdaf
+#import mpdaf
 
 
 
@@ -583,7 +583,9 @@ class muse_redshiftgui:
          
    def setTable(self):
       
-      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'comment']))
+      self.objectsTable.setData(np.array(self.objects['row', 'id', 'class',
+                                                      'redshift', 'quality', 'extraction_center',
+                                                      'comment']))
    
    def goToObject(self):
       
@@ -1025,10 +1027,13 @@ class muse_redshiftgui:
       index = np.where(self.spec['mask'].astype('bool'))[0]
       print(self.spec['mask'])
       print(index)
-      q1,q2=np.percentile(self.flux1D[self.spec['mask'].astype('bool')],[0.1,99.9])
-      q1 = np.min([0.0, q1, -0.1*q2])
-      self.plot_spec1D.setYRange(q1,2*q2,padding=0)
-      self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
+      try:
+         q1,q2=np.percentile(self.flux1D[self.spec['mask'].astype('bool')],[0.1,99.9])
+         q1 = np.min([0.0, q1, -0.1*q2])
+         self.plot_spec1D.setYRange(q1,2*q2,padding=0)
+         self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
+      except:
+         print('Unable to auto-percentile 2D spectrum zmin/max')
 
    
    # def zoom_redshift(self, key, ):
@@ -1612,7 +1617,7 @@ class muse_redshiftgui:
    def autoMask(self):
       """Automatically mask things below and above some range, and the A band"""
       
-      sky5580 = [5578.5 - 7.0, 5578.5 + 7.0]
+      sky5580 = [5578.5 - 10.0, 5578.5 + 10.0]
 
       index = np.where(((self.wave > sky5580[0]) & (self.wave < sky5580[1])) | (self.error1D == 0))
       self.spec['mask'][index] = 0
@@ -1766,7 +1771,7 @@ class muse_redshiftgui:
       
    def setSpec(self, autoRange=True):
       
-      print('setSpect')
+      print('setSpec {}'.format(self.row))
       """Set the spectrum to current row"""
       self.z = self.objects[self.row-1]['redshift']
       self.id = self.objects[self.row-1]['id']
@@ -1883,7 +1888,7 @@ class muse_redshiftgui:
          
          features = self.features
          observedWaves = features['wave']*(1 + self.z)
-         features = features[(observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))]
+         features = features[(observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave)) | (features['list'] == 'sky')]
          
          for feature in features:
             

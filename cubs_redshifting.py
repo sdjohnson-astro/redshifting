@@ -219,7 +219,8 @@ class ldss3_redshiftgui:
       
       
       # Get the GUI ready
-      self.app = QtGui.QApplication([])       # Always start by initializing Qt
+      self.app = QtGui.QApplication([])
+      #self.app = QtWidgets.QApplication(sys.argv)       # Always start by initializing Qt
       self.widget = QtGui.QWidget()       # Define a top-level widget
       
       # Set the widget size
