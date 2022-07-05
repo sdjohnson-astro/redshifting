@@ -1580,6 +1580,7 @@ class muse_redshiftgui:
 # 
       path = '{}_spec1D'.format(self.mask)
       self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
+      self.objects.write('{}_objects.csv'.format(path, self.mask), overwrite=True)
 
       savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
                                           self.objects[self.row-1]['id'],
@@ -1893,7 +1894,7 @@ class muse_redshiftgui:
          
          features = self.features
          observedWaves = features['wave']*(1 + self.z)
-         features = features[(observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))]
+         features = features[((observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))) | (features['list'] == 'sky')]
          
          for feature in features:
             

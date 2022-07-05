@@ -1892,7 +1892,7 @@ class muse_redshiftgui:
          
          features = self.features
          observedWaves = features['wave']*(1 + self.z)
-         features = features[(observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))]
+         features = features[((observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))) | (features['list'] == 'sky')]
          
          for feature in features:
             

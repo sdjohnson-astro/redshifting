@@ -1042,7 +1042,7 @@ def findz_latis(spec, zmin=2.5, zmax=5.0, dz=0.0005):
 
 # Fit a galaxy model with a guess redshift and optionally low-order
 # polynomials to account for an flux calibration errors
-def fitz_galaxy_emcee(spec, zguess, fluxpoly=True, steps=5000, burn=2000, progress=True, printReport=True, saveCorner='', zMin=None, zMax=None):
+def fitz_galaxy_emcee(spec, zguess, fluxpoly=True, steps=5000, burn=2000, progress=True, printReport=True, saveCorner='', zMin=None, zMax=None, saveSpecPlot=''):
    
    flux_median = np.median(spec['flux'])
    parameters = Parameters()
@@ -1078,13 +1078,20 @@ def fitz_galaxy_emcee(spec, zguess, fluxpoly=True, steps=5000, burn=2000, progre
    #result_emcee.conf_interval()
    
    if printReport:
+      
+      print('Initial results')
+      print(result.fit_report())
+      
+      
+      print('MCMC results')
       print(result_emcee.fit_report())
       #print(result_emcee.ci_report())
       
       z_marginalized = np.percentile(result_emcee.flatchain['z'], [50])[0]
       zErrUp = np.percentile(result_emcee.flatchain['z'], [84.1])[0] - np.percentile(result_emcee.flatchain['z'], [50])[0]
       zErrDown = np.percentile(result_emcee.flatchain['z'], [50])[0] - np.percentile(result_emcee.flatchain['z'], [15.9])[0]
-      print('z = {:0.5f} +{:0.5f} -{:0.5f}'.format(z_marginalized, zErrUp, zErrDown))
+      std_z = np.std(result_emcee.flatchain['z'])
+      print('z = {:0.5f} +{:0.5f} -{:0.5f} sigma(v) & +/- = {:0.1f} & +{:0.1f} -{:0.1f} km/s'.format(z_marginalized, zErrUp, zErrDown, std_z/(1 + z_marginalized)*c_kms, zErrUp/(1 + z_marginalized)*c_kms, zErrDown/(1 + z_marginalized)*c_kms))
       
       interval68 = np.percentile(result_emcee.flatchain['z'], [15.9, 84.1])
       interval95 = np.percentile(result_emcee.flatchain['z'], [2.28, 97.7])
@@ -1102,7 +1109,31 @@ def fitz_galaxy_emcee(spec, zguess, fluxpoly=True, steps=5000, burn=2000, progre
                                    truths=mle_soln)
       emcee_corner.savefig(saveCorner)
       plt.close()
+   
+   if saveSpecPlot != '':
       
+      fig, ax = plt.subplots(2, figsize=(7, 10))
+      
+      ax[0].plot(spec['wave'], spec['flux'], color='black', drawstyle='steps-mid')
+      ax[0].plot(spec['wave'], spec['error'], color='blue', drawstyle='steps-mid')
+      ax[0].plot(spec['wave'], result_emcee.best_fit, color='red')
+      ax[0].minorticks_on()
+      ax[0].set_xlabel(r'$\rm observed\ wavelength\ [\AA]$')
+      ax[0].set_ylabel(r'$f_\lambda\ [{\rm arbitrary}]$')
+      tempString = saveSpecPlot.replace('.pdf', '').replace('_', '\ ').replace('spec', '')
+      titleString = r'$\rm {}'.format(tempString)  + r'$z={:0.5f} +{:0.5f} -{:0.5f}$'.format(z_marginalized, zErrUp, zErrDown)
+      titleString = titleString.split('/')[1]
+      ax[0].set_title(titleString)
+      ax[0].minorticks_on()
+      
+      
+      ax[1].hist(result_emcee.flatchain['z'], color='black', histtype='step', density=True)
+      ax[1].minorticks_on()
+      ax[1].set_xlabel(r'$\rm marginalized\ redshift\ posterior$')
+      ax[1].set_ylabel(r'$P$')
+      
+      fig.tight_layout()
+      plt.savefig(saveSpecPlot)
                              
    return result_emcee
 
