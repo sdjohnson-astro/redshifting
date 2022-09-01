@@ -73,8 +73,8 @@ print(error)
 
 wavecheck = Table()
 wavecheck['wave'] = waveArray
-wavecheck['medianerror'] = error
-wavecheck['sky'] = error**2
+wavecheck['medianerror'] = error*1e17
+wavecheck['sky'] = (error*1e17)**2
 wavecheck = wavecheck[(wavecheck['wave'] > 5578.5 - 25) & (wavecheck['wave'] < 5578.5 + 25)]
 
 
@@ -82,8 +82,8 @@ gmodel = Model(gaussian)
 
 parameters = Parameters()
 parameters.add_many(('amp',     np.max(wavecheck['sky']) - np.min(wavecheck['sky']), True, None,    None,    None),
-                    ('cen',     5578.5,                   True, 5570.0,  5590.0,  None),
-                    ('wid',     5.0,                      True, 1.0,     None,    None),
+                    ('cen',     5578.5,                   True, None,  None,  None),
+                    ('wid',     3.0,                      True, 0.0,     None,    None),
                     ('a',       0.0,                      True, None,    None,    None),
                     ('b',       np.min(wavecheck['sky']), True, None,    None,    None))
 
@@ -126,10 +126,10 @@ inVacuum = np.abs(dW_vacuum) < np.abs(dW_air)
 
 if inVacuum:
    
-   print('spec1D wavelengths are in vacuum. dW={:0.2f}'.format(dW_vacuum))
+   print('spec1D wavelengths are in vacuum. dW={:0.3f}'.format(dW_vacuum))
 
 else:
-   print('spec1D wavelengths are in air!!!!!! dW={:0.2f}'.format(dW_vacuum))
+   print('spec1D wavelengths are in air!!!!!! dW={:0.3f}'.format(dW_vacuum))
 
 os.system('open {}_wavecheck.pdf'.format(args.m))
 

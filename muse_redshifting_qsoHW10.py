@@ -54,20 +54,20 @@ def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,r
       
       return spec
 
-def getspec1Dname(mask, id):
+def getspec1Dname(mask, row, id, name):
    path = '{}_spec1D'.format(mask)
    
-   return '{}/{}_spec1D.fits'.format(path, id)
+   return '{}/{}_{}_{}_spec1D.fits'.format(path, row, id, name)
 
-def getspec2Dname(mask,id):
+def getspec2Dname(mask, row, id, name):
    path = '{}_spec1D'.format(mask)
 
-   return '{}/{}_spec2D.fits'.format(path, id)
+   return '{}/{}_{}_{}_spec2D.fits'.format(path, row, id, name)
 
-def getredshift1Dname(mask, id):
+def getredshift1Dname(mask, row, id, name):
    path = '{}_spec1D'.format(mask)
    
-   return '{}/{}_redshift.fits'.format(path, id)
+   return '{}/{}_{}_{}_redshift.fits'.format(path, row, id, name)
 
 #for CarPy output
 def createmusefiles(mask):
@@ -148,7 +148,7 @@ def createmusefiles(mask):
       spec = formatspectrum(wave, flux, error)
       
       # Save the 1D spectrum
-      savename = getspec1Dname(mask, object['id'])
+      savename = getspec1Dname(mask, object['row'], object['id'], object['name'])
       print(savename)
       fits.writeto(savename, spec, overwrite=True)
 
@@ -183,7 +183,7 @@ def createmusefiles(mask):
       #print('spec2D = {}'.format(np.shape(spec2D)))
       #print('')
       
-      savename = getspec2Dname(mask, object['id'])
+      savename = getspec2Dname(mask, object['row'], object['id'], object['name'])
       fits.writeto(savename, spec2D, overwrite=True)
       
    
@@ -478,7 +478,7 @@ class muse_redshiftgui:
       
       
       self.paramSpec = [
-              dict(name='z=', type='float', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
+              dict(name='z=', type='str', value='{:0.5f}'.format(self.z), dec=False, readonly=True),
               dict(name='quality:', type='str', value='', readonly=True),
               dict(name='class:', type='str', value='', readonly=True), 
               dict(name='row:', type='str', value='', readonly=True),
@@ -506,7 +506,7 @@ class muse_redshiftgui:
       
       
       self.objectsTable = pg.TableWidget(editable=False, sortable=False)
-      self.objectsTable.setFormat('%0.5f', 2)
+      self.objectsTable.setFormat('%0.5f', 3)
       self.setTable()
       
       self.objectsTable.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
@@ -573,7 +573,7 @@ class muse_redshiftgui:
        spec = formatspectrum(self.wave, flux, error)
       
        # Save the 1D spectrum
-       savename = getspec1Dname(self.mask, object['id'])
+       savename = getspec1Dname(self.mask, object['row'], object['id'], object['name'])
        print(savename)
        fits.writeto(savename, spec, overwrite=True)
        
@@ -588,7 +588,7 @@ class muse_redshiftgui:
          
    def setTable(self):
       
-      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'comment']))
+      self.objectsTable.setData(np.array(self.objects['id', 'name', 'class', 'redshift', 'quality', 'comment']))
    
    def goToObject(self):
       
@@ -1374,7 +1374,7 @@ class muse_redshiftgui:
       if self.objects[self.row-1]['class'] == 'quasar':
          
          z = self.z
-         eigenvalues, model, chi2pdf = redshift.fitatz_qso(spec, z)
+         eigenvalues, model, chi2pdf = redshift.fitatz_qso_hw_poly(spec, z)
          spec['model'] = model
          
       if self.objects[self.row-1]['class'] == 'hizgal':
@@ -1427,11 +1427,11 @@ class muse_redshiftgui:
          
       if self.objects[self.row-1]['class'] == 'quasar':
          
-         redshifts = redshift.findz_qso(spec, zmin=self.z-0.01, zmax=self.z+0.01, dz=0.0001)
+         redshifts = redshift.findz_qso_hw(spec, zmin=self.z-0.01, zmax=self.z+0.01, dz=0.0001)
          
          minIndex = np.argmin(redshifts['chi2_pdf'])
          z = redshifts[minIndex]['z']
-         eigenvalues, model, chi2pdf = redshift.fitatz_qso(spec, z)
+         eigenvalues, model, chi2pdf = redshift.fitatz_qso_hw_poly(spec, z)
          spec['model'] = model
          
       if self.objects[self.row-1]['class'] == 'hizgal':
@@ -1516,28 +1516,32 @@ class muse_redshiftgui:
             
          if self.objects[self.row-1]['class'] == 'quasar':
             
-            redshifts = redshift.findz_qso_hw(self.spec, zmin=0.6, zmax=1.4, dz=0.0001)
+            redshifts = redshift.findz_qso_hw(self.spec, zmin=0.05, zmax=2.0, dz=0.001)
             
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
             
-            #redshifts_fine = redshift.findz_qso_hw(self.spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
-            #
-            #redshifts = vstack((Table(redshifts), Table(redshifts_fine)))
-            #
-            #redshifts = unique(redshifts, keys='z')
-            #
-            #redshifts.sort('z')
-            #
-            #
-            #minIndex = np.argmin(redshifts['chi2_pdf'])
-            #z = redshifts[minIndex]['z']
-            #
-            #redshifts = np.array(redshifts)            
+            redshifts_fine = redshift.findz_qso_hw(self.spec, zmin=z-0.01, zmax=z+0.01, dz=0.0001)
+            
+            redshifts = vstack((Table(redshifts), Table(redshifts_fine)))
+            
+            redshifts = unique(redshifts, keys='z')
+            
+            redshifts.sort('z')
+            
+            
+            minIndex = np.argmin(redshifts['chi2_pdf'])
+            z = redshifts[minIndex]['z']
+            
+            print(z)
+            
+            redshifts = np.array(redshifts)   
+            
+            print(Table(redshifts))         
             
             
             
-            eigenvalues, model, chi2_pdf = redshift.fitatz_qso_hw_poly(self.spec, z)
+            eigenvalues, model, chi2pdf = redshift.fitatz_qso_hw_poly(self.spec, z)
             self.spec['model'] = model
             
          
@@ -1580,14 +1584,18 @@ class muse_redshiftgui:
       path = '{}_spec1D'.format(self.mask)
       self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
 
-      savename = getspec1Dname(self.mask, self.objects[self.row-1]['id'])
+      savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
+                                          self.objects[self.row-1]['id'],
+                                          self.objects[self.row-1]['name'])
       if not os.path.isfile(savename):
          return
       fits.writeto(savename, self.spec, overwrite=True)
       
       # If we have a redshift array, store it
       if self.redshifted == 1:
-         savename = getredshift1Dname(self.mask, self.objects[self.row-1]['id'])
+         savename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
+                                                 self.objects[self.row-1]['id'],
+                                                 self.objects[self.row-1]['name'])
          self.redshifts.write(savename, overwrite=True)
       
       print(Table(self.spec))
@@ -1769,6 +1777,7 @@ class muse_redshiftgui:
       """Set the spectrum to current row"""
       self.z = self.objects[self.row-1]['redshift']
       self.id = self.objects[self.row-1]['id']
+      self.name = self.objects[self.row-1]['name']
       self.comment_text.setText(self.objects[self.row-1]['comment'])
 
       #if self.version=='carpy':
@@ -1793,11 +1802,11 @@ class muse_redshiftgui:
       #   self.y1 = int(float(self.apnum2Darray[3]))
       #   self.flux2D = self.spec2Darray[self.y0:self.y1, :].transpose()
       
-      self.spec = fits.getdata(getspec1Dname(self.mask, self.id))
+      self.spec = fits.getdata(getspec1Dname(self.mask, self.row, self.id, self.name))
       
       print(Table(self.spec))
       
-      self.flux2D = fits.getdata(getspec2Dname(self.mask, self.id))
+      self.flux2D = fits.getdata(getspec2Dname(self.mask, self.row, self.id, self.name))
       
       self.wave = self.spec['wave']
       self.flux1D = self.spec['flux']
@@ -1816,7 +1825,9 @@ class muse_redshiftgui:
       
       # Check for redshift filename and read in if present.
       redshiftFilename = getredshift1Dname(self.mask,
-                                           self.objects[self.row-1]['id'])
+                                           self.objects[self.row-1]['row'],
+                                           self.objects[self.row-1]['id'],
+                                           self.objects[self.row-1]['name'])
       if os.path.isfile(redshiftFilename):
          self.redshifted = 1
          self.redshifts = Table.read(redshiftFilename)
@@ -1885,7 +1896,7 @@ class muse_redshiftgui:
          
          features = self.features
          observedWaves = features['wave']*(1 + self.z)
-         features = features[(observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))]
+         features = features[((observedWaves > np.min(self.wave)) & (observedWaves < np.max(self.wave))) | (features['list'] == 'sky')]
          
          for feature in features:
             
@@ -1935,7 +1946,7 @@ class muse_redshiftgui:
       self.plot_spec1D.plot(self.wave, self.flux1D*self.spec['mask'],
                         pen=pg.mkPen('w', width=1))
       self.plot_spec1D.plot(self.wave, self.error1D*self.spec['mask'],
-                        pen=pg.mkPen('b', width=1))
+                        pen=pg.mkPen('c', width=1))
 
       self.plot_spec1D.plot(self.wave, self.model1D,pen=pg.mkPen('r', width=2))
                                

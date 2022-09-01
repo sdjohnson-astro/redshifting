@@ -702,6 +702,8 @@ def findz_qso_hw(spec, zmin=0.0, zmax=3.0, dz=0.0005):
    index = np.where((spec['mask'] == 0) | (spec['error'] == 0.0))
    one_over_sigmasquared[index] = 0.0
    
+   
+   
    wave = spec['wave']
    flux = spec['flux']
    error = spec['error']
@@ -749,7 +751,7 @@ def findz_qso_hw(spec, zmin=0.0, zmax=3.0, dz=0.0005):
       eigenvalues, chi2, chi2_pdf = fitatz_qso_hw_precompute(redshift['z'])
       redshift['chi2'] = chi2
       
-      redshift['chi2_pdf'] = chi2_pdf
+      redshift['chi2_pdf'] = chi2
       
       redshift['eigen1'] = eigenvalues[0]
       redshift['eigen2'] = eigenvalues[1]
