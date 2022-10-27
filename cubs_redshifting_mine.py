@@ -1081,9 +1081,6 @@ class ldss3_redshiftgui:
             
             # self.changeMask(0)
             self.autoMask()
-         
-         if event.text() == 'c':
-             self.changeMask_Nishant()
             
          if event.text() == 'u':
             
@@ -1559,17 +1556,7 @@ class ldss3_redshiftgui:
          self.mask_flag = 0
          self.draw()
          
-   def changeMask_Nishant(self):
-       full_mask = np.logical_and(np.abs(self.flux1D/self.error1D) < 25,(np.abs(np.gradient(self.flux2D, axis=0)) > 100).mean(axis=1) > 0.001)
-       full_mask = np.logical_or(full_mask, self.flux1D < 1e-20)
-       x = self.flux2D < 1e-15
-       y = x.sum(axis=1)
-
-       full_mask = np.logical_or(full_mask, y > 26)
-       self.spec['mask'] = np.invert(full_mask)
-       
-       self.draw()
-
+            
    def smoothSpec(self):
       """Smooth the spectrum using Savitzky-Golay filter."""
       
