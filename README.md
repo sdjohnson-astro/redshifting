@@ -1,12 +1,6 @@
 # redshifting
 
-# Set up environment
 
-```
-export REDSHIFTING="parentdirectorytree/redshifting"
-export PATH="$REDSHIFTING:$PATH"
-export PYTHONPATH="$REDSHIFTING:$PYTHONPATH"
-```
 
 # Dependencies
 * numpy
@@ -17,18 +11,19 @@ export PYTHONPATH="$REDSHIFTING:$PYTHONPATH"
 * lmfit (https://lmfit.github.io/lmfit-py/)
 
 # Conda setup
-note: conda setup has not been tested recently.
-```
-conda create -n redshifting
-conda install -n redshifting python=2 numpy scipy matplotlib pyqtgraph
-conda install -n redshifting astropy
-conda install -n redshifting -c GSECARS lmfit
-conda install -n redshifting -c anaconda pyqt
+conda create --name redshifting python=3.7
+conda activate redshifting37
+conda install -c conda-forge pyqt
+conda install -c anaconda pyqtgraph
+conda install -c conda-forge astropy
+conda install -c conda-forge lmfit
+conda install -c astropy corner
+conda activate redshifting
 
-source activate redshifting
-```
-(Can probably also do python=3, but I can't promise it works 100%)
-
+# Download the code and add these to your startup file (.zshrc if using conda on a mac)
+export REDSHIFTING=“parentdirectorytree/redshifting”
+export PATH=“$REDSHIFTING:$PATH”
+export PYTHONPATH=“$REDSHIFTING:$PYTHONPATH”
 # Running the GUI:
 cd into the directory *above* the folder with the reductions for that mask
  (i.e., if you download the ldss3_v3 spectra, the folder you untar them into)
