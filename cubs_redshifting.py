@@ -89,11 +89,14 @@ def createSpec1Dfiles(mask,version='carpy'):
       extaper = Column(np.zeros(nRows,dtype='float'), name='extaper')
       extflag = Column(np.zeros(nRows,dtype=bool), name='extflag')
       boxes = Column(np.zeros(nRows,dtype=bool), name='alignbox')
+      best_fit_classes = Column(np.chararray(nRows, itemsize=100), name='best_fit_class')
 
-      objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag,boxes])
+      objects = Table([rows, ids, classes, redshifts, qualities, comments, extpos, extaper,extflag,boxes, best_fit_classes])
       objects['comment'] = 'none'
       objects['class'] = 'galaxy'
+      objects['best_fit_class'] = 'N/A'
       objects['quality'] = -1
+
       # for i in range(nRows):
       for i,target in enumerate(maskinfo):
          # target=gdict['objects'][i]['setup']
@@ -169,6 +172,7 @@ def createSpec1Dfiles(mask,version='carpy'):
          print(i+1)         
       objects['class'] = 'galaxy'
       objects['quality'] = -1  
+      objects['best_fit_class'] = 'N/A'
       objects.write('{}/{}_objects.fits'.format(path, mask), overwrite=True)         
 
 
@@ -200,6 +204,7 @@ class ldss3_redshiftgui:
             
       path = '{}_spec1D'.format(mask)
       self.objects = Table.read('{}/{}_objects.fits'.format(path, mask))
+      self.objects['best_fit_class'] = 'N/A'
 
       
       # Set the initial row number to zero
@@ -437,13 +442,14 @@ class ldss3_redshiftgui:
       self.paramSpec = [
               dict(name='z=', type='str', value=self.z, dec=False, step=0.0001, limits=[None, None], readonly=True),
               dict(name='quality:', type='str', value='', readonly=True),
-              dict(name='class:', type='str', value='', readonly=True), 
+              dict(name='class:', type='str', value='', readonly=True),  
               dict(name='row:', type='str', value='', readonly=True),
               dict(name='id:', type='str', value='', readonly=True), 
               dict(name='Show lines', type='bool', value=True),
               dict(name='Show trace', type='bool', value=True),
               dict(name='Show raw', type='bool', value=False),
-              dict(name='Bad Extraction:', type='bool', value=False)
+              dict(name='Bad Extraction:', type='bool', value=False),
+              dict(name='best-fit classification:', type='str', value='', readonly=True)
               # dict(name='extraction center:', type='str', value='', readonly=True)
               # dict(name='extraction aper:', type='str', value='', readonly=True)
            ]
@@ -520,7 +526,7 @@ class ldss3_redshiftgui:
          
    def setTable(self):
       
-      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'extflag','row','comment']))
+      self.objectsTable.setData(np.array(self.objects['id', 'class', 'redshift', 'quality', 'extflag','row','comment', 'best_fit_class']))
    
    def goToObject(self):
       
@@ -770,6 +776,12 @@ class ldss3_redshiftgui:
          self.param['class:'] =  classification
          
          self.draw()
+
+   def setSpecClass(self, spec_class):
+      self.objects[self.row-1]['best_fit_class'] = spec_class
+      self.param['class:'] =  spec_class
+         
+      self.draw()
                
 
    def setQuality(self, quality):
@@ -1292,17 +1304,19 @@ class ldss3_redshiftgui:
    def fitObjectAtRedshift(self):
       
       spec = self.spec
+      best_fit_type = 'N/A'
       if self.objects[self.row-1]['class'] == 'galaxy':
          
          z = self.z
          eigenvalues, model, chi2pdf = redshift.fitatz_galaxy(spec, z)
+         self.param['best-fit classification:'] = 'N/A'
          spec['model'] = model
          
          
       if self.objects[self.row-1]['class'] == 'star':
          
          z = self.z
-         eigenvalues, model, chi2pdf = redshift.fitatz_star(spec, z)
+         eigenvalues, model, chi2pdf, best_fit_type = redshift.fitatz_star(spec, z)
          spec['model'] = model  
          
          
@@ -1323,6 +1337,8 @@ class ldss3_redshiftgui:
 
       
       self.objects[self.row-1]['redshift'] = z
+      self.objects[self.row-1]['best_fit_class'] = best_fit_type
+
       #self.redshifted = 1
       #self.redshifts = Table(redshifts)
       self.save()
@@ -1335,7 +1351,7 @@ class ldss3_redshiftgui:
       
       spec = self.spec
       
-      
+      best_fit_type = 'N/A'
       z = self.z
       
       if self.objects[self.row-1]['class'] == 'galaxy':
@@ -1355,7 +1371,7 @@ class ldss3_redshiftgui:
          
          minIndex = np.argmin(redshifts['chi2_pdf'])
          z = redshifts[minIndex]['z']
-         eigenvalues, model, chi2pdf = redshift.fitatz_star(spec, z)
+         eigenvalues, model, chi2pdf, best_fit_type = redshift.fitatz_star(spec, z)
          spec['model'] = model  
          
          
@@ -1380,6 +1396,7 @@ class ldss3_redshiftgui:
       
          
       self.objects[self.row-1]['redshift'] = z
+      self.objects[self.row-1]['best_fit_class'] = best_fit_type
       if self.redshifted == 0:  
          
          self.redshifted = 1
@@ -1395,7 +1412,9 @@ class ldss3_redshiftgui:
       print('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
       self.z = z
-      self.param['z='] =  '{:0.5f}'.format(self.z)       
+      self.param['z='] =  '{:0.5f}'.format(self.z)     
+      self.best_fit_class = best_fit_type
+      self.param['best-fit classification:']  = self.best_fit_class  
       self.save()
       self.draw()
       
@@ -1403,6 +1422,7 @@ class ldss3_redshiftgui:
    def redshiftObject(self):
       
       spec = self.spec
+      best_fit_type = 'N/A'
       
       nGoodPix = np.sum(spec['mask'])
       if nGoodPix > 5:
@@ -1441,7 +1461,7 @@ class ldss3_redshiftgui:
             
             minIndex = np.argmin(redshifts['chi2_pdf'])
             z = redshifts[minIndex]['z']
-            eigenvalues, model, chi2pdf = redshift.fitatz_star(spec, z)
+            eigenvalues, model, chi2pdf, best_fit_type = redshift.fitatz_star(spec, z)
             spec['model'] = model  
             
             
@@ -1471,10 +1491,13 @@ class ldss3_redshiftgui:
                                                         self.objects[self.row-1]['id'], z))
          
          self.objects[self.row-1]['redshift'] = z
+         self.objects[self.row-1]['best_fit_class'] = best_fit_type
          self.z = z
+         self.best_fit_class = best_fit_type
          self.redshifted = 1
          self.redshifts = Table(redshifts)
-         self.param['z='] =  '{:0.5f}'.format(self.z)      
+         self.param['z='] =  '{:0.5f}'.format(self.z)   
+         self.param['best-fit classification:']  = self.best_fit_class
          self.save()
          self.draw()
          
@@ -1761,6 +1784,7 @@ class ldss3_redshiftgui:
       self.param['z='] =  '{:0.5f}'.format(self.objects[self.row-1]['redshift'])
       self.param['quality:'] =  '{}'.format(self.objects[self.row-1]['quality'])
       self.param['Bad Extraction:'] =  bool(self.objects[self.row-1]['extflag'])
+      self.param['best-fit classification:'] = '{}'.format(self.objects[self.row-1]['best_fit_class'])
 
       
    def mouseMoved_redshift(self, pos):

@@ -42,7 +42,7 @@ eigen_star8_interp = interp1d(eigen_star['wave'], eigen_star['flux8'], fill_valu
 eigen_star9_interp = interp1d(eigen_star['wave'], eigen_star['flux9'], fill_value=(-999.0, -999.0), assume_sorted=False, bounds_error=False)
 eigen_star10_interp = interp1d(eigen_star['wave'], eigen_star['flux10'], fill_value=(-999.0, -999.0), assume_sorted=False, bounds_error=False)
 eigen_star11_interp = interp1d(eigen_star['wave'], eigen_star['flux11'], fill_value=(-999.0, -999.0), assume_sorted=False, bounds_error=False)
-
+spectypes = ['A', 'B', 'CV', 'Carbon', 'Carbon_DQ', 'F', 'K', 'L', 'M', 'O', 'WD']
 
 # Read in quasar HW templates
 quasar_HW = np.load(os.environ['REDSHIFTING'] + '/eigenspectra/quasar_HW.npy')
@@ -295,7 +295,7 @@ def fitatz_qso(spec, z):
       
  # Same as fitatz_galaxy but for stars     
 def fitatz_star(spec, z):
-   
+      spectypes = ['A', 'B', 'CV', 'Carbon', 'Carbon_DQ', 'F', 'K', 'L', 'M', 'O', 'WD']
       constant = np.ones(len(spec))
       linear = np.arange(len(spec))
       square = np.arange(len(spec))**2
@@ -368,9 +368,12 @@ def fitatz_star(spec, z):
       
       dof = np.sum(mask) - 13.0
       chi2_pdf = chi2/dof
+
+      best_fit_index = np.argmax(np.abs(eigenvalues[:11]))  # Find the index of the highest absolute eigenvalue
+      best_fit_type = spectypes[best_fit_index]  # Map to spectypes list
+      print(f"The best-fitting eigenspectra corresponds to the star type: {best_fit_type}")
       
-      
-      return (eigenvalues, model, chi2_pdf)
+      return (eigenvalues, model, chi2_pdf, best_fit_type)
       
       
  # Same as fitatz_galaxy but for quasars with Hewitt and Wild cross-correlation template and flux calibration polynomials
