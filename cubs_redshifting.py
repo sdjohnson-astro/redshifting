@@ -24,13 +24,6 @@ def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,r
                                              'mask', 'model', 'flat', 'arc', 'raw', 'rawerr'), 
                                    'formats':(float, float, float, float, float,
                                               float, float,float,float)})
-      # spec['wave'] = 0.0
-      # spec['flux'] = 0.0
-      # spec['error'] = 0.0
-      # spec['mask'] = 1
-      # spec['model'] = 0.0
-      # spec['flat'] = 0.0
-      # spec['arc'] = 0.0  
 
       spec['wave'] = wave
       spec['flux'] = flux
@@ -1077,13 +1070,23 @@ class ldss3_redshiftgui:
                   
             self.smoothSpec()
             
-         if (event.text() == '-') | (event.text() == '_'):
-            self.smoothing = self.smoothing - 2
+         # if (event.text() == '-') | (event.text() == '_'):
+         #    self.smoothing = self.smoothing - 2
             
-            if self.smoothing < 5:
-               self.smoothing = 1
+         #    if self.smoothing < 5:
+         #       self.smoothing = 1
          
-            self.smoothSpec()
+         #    self.smoothSpec()
+         if (event.text() == '-') | (event.text() == '_'):  # Detect '-' key press
+            if hasattr(self, 'original_spec'):
+                  self.spec = self.original_spec.copy()  # Revert to the original spectrum
+                  self.flux1D = self.spec['flux']
+                  self.error1D = self.spec['error']
+                  self.model1D = self.spec['model']
+                  self.wave = self.spec['wave']
+                  self.draw()  # Redraw the spectrum
+            else:
+                  print("No original spectrum found to revert to.")
             
          if event.text() == 'm':
             
@@ -1593,16 +1596,116 @@ class ldss3_redshiftgui:
        
        self.draw()
 
-   def smoothSpec(self):
-      """Smooth the spectrum using Savitzky-Golay filter."""
-      
-      if self.smoothing > 1:
-         self.flux1D = savgol_filter(self.spec['flux'], self.smoothing, 2)
-         self.error1D = savgol_filter(self.spec['error'], self.smoothing, 2)/np.sqrt(self.smoothing)
-         self.model1D = savgol_filter(self.spec['model'], self.smoothing, 2)
-      if self.smoothing == 1:
-         self.flux1D = self.spec['flux']
-         self.error1D = self.spec['error']
+   def smoothSpec(self, type = 'stacked'):
+   
+      if type == 'stacked':
+         if not hasattr(self, 'original_spec'):
+            self.original_spec = self.spec.copy()
+            self.original_wave = self.wave.copy()
+            self.original_flux1D = self.flux1D
+            self.original_error1D = self.error1D
+            self.original_model1D = self.model1D
+
+         delta = self.smoothing/4
+         min_wave = np.min(self.spec['wave'])
+         max_wave = np.max(self.spec['wave'])
+         wave = np.arange(min_wave, max_wave, delta)
+
+         # Add interpolation of the original spectrum data onto the new wavelength grid
+         interp_flux = np.interp(wave, self.spec['wave'], self.spec['flux'])
+         interp_error = np.interp(wave, self.spec['wave'], self.spec['error'])
+         interp_model = np.interp(wave, self.spec['wave'], self.spec['model'])
+         interp_mask = np.interp(wave, self.spec['wave'], self.spec['mask'])
+         interp_arc = np.interp(wave, self.spec['wave'], self.spec['arc'])
+         interp_raw = np.interp(wave, self.spec['wave'], self.spec['raw'])
+         interp_rawerr = np.interp(wave, self.spec['wave'], self.spec['rawerr'])
+
+         # Initialize the smoothed spectrum
+         smoothed_spec = Table()
+         smoothed_spec['wave'] = wave
+         smoothed_spec['flux'] = np.zeros_like(wave)
+         smoothed_spec['error'] = np.zeros_like(wave)
+         smoothed_spec['model'] = np.zeros_like(wave)
+         smoothed_spec['mask'] = np.zeros_like(wave)
+         smoothed_spec['arc'] = np.zeros_like(wave)
+         smoothed_spec['raw'] = np.zeros_like(wave)
+         smoothed_spec['rawerr'] = np.zeros_like(wave)
+
+         # Loop through the new wavelength grid
+         for i, pixel in enumerate(smoothed_spec):
+            # Define the window range based on the current pixel
+            thispixel_flux = interp_flux[(wave >= (pixel['wave'] - delta / 2)) &
+                                         (wave < (pixel['wave'] + delta / 2))]
+            thispixel_error = interp_error[(wave >= (pixel['wave'] - delta / 2)) &
+                                           (wave < (pixel['wave'] + delta / 2))]
+            thispixel_model = interp_model[(wave >= (pixel['wave'] - delta / 2)) &
+                                           (wave < (pixel['wave'] + delta / 2))]
+            thispixel_mask = interp_mask[(wave >= (pixel['wave'] - delta / 2)) &
+                                         (wave < (pixel['wave'] + delta / 2))]
+            thispixel_arc = interp_arc[(wave >= (pixel['wave'] - delta / 2)) &
+                                       (wave < (pixel['wave'] + delta / 2))]
+            thispixel_raw = interp_raw[(wave >= (pixel['wave'] - delta / 2)) &
+                                       (wave < (pixel['wave'] + delta / 2))]
+            thispixel_rawerr = interp_rawerr[(wave >= (pixel['wave'] - delta / 2)) &
+                                             (wave < (pixel['wave'] + delta / 2))]
+
+            # Average the data in the window and assign it to the smoothed spectrum
+            smoothed_spec['flux'][i] = np.nanmean(thispixel_flux)
+            smoothed_spec['error'][i] = np.nanmean(thispixel_error)
+            smoothed_spec['model'][i] = np.nanmean(thispixel_model)
+            smoothed_spec['mask'][i] = np.nanmean(thispixel_mask)
+            smoothed_spec['arc'][i] = np.nanmean(thispixel_arc)
+            smoothed_spec['raw'][i] = np.nanmean(thispixel_raw)
+            smoothed_spec['rawerr'][i] = np.nanmean(thispixel_rawerr)
+
+         # Replace the original spectrum with the smoothed one
+         self.spec = smoothed_spec
+         self.wave = wave
+         self.flux1D = smoothed_spec['flux']
+         self.error1D = smoothed_spec['error']
+         self.model1D = smoothed_spec['model']
+         # min = np.min(self.spec['wave'])
+         # max = np.max(self.spec['wave'])
+         # delta = 2
+         # wave = np.arange(min, max, delta)
+
+         # smoothed_spec = Table()
+         # smoothed_spec['wave'] = wave
+         # smoothed_spec['flux'] = 0.0
+         # smoothed_spec['error'] = 0.0
+         # smoothed_spec['model'] = 0.0
+         # smoothed_spec['mask'] = 0.0
+         # smoothed_spec['arc'] = 0.0
+         # smoothed_spec['raw'] = 0.0
+         # smoothed_spec['rawerr'] = 0.0
+
+         # for pixel in smoothed_spec:
+         #    thispixel = self.spec[(self.spec['wave'] >= (pixel['wave'] - delta/2)) 
+         #                          & (self.spec['wave'] < (pixel['wave'] + delta/2))]
+         #    pixel['flux'] = np.nanmean(thispixel['flux'])
+         #    pixel['error'] = np.nanmean(thispixel['error'])
+         #    pixel['model'] = np.nanmean(thispixel['model'])
+         #    pixel['mask'] = np.nanmean(thispixel['mask'])
+         #    pixel['arc'] = np.nanmean(thispixel['arc'])
+         #    pixel['raw'] = np.nanmean(thispixel['raw'])
+         #    pixel['rawerr'] = np.nanmean(thispixel['rawerr'])
+
+         # self.spec = smoothed_spec
+         # self.flux1D = smoothed_spec['flux']
+         # self.error1D = smoothed_spec['error']
+         # self.model1D = smoothed_spec['model']
+
+  
+      if type == 'savgol':
+         """Smooth the spectrum using Savitzky-Golay filter."""
+         
+         if self.smoothing > 1:
+            self.flux1D = savgol_filter(self.spec['flux'], self.smoothing, 2)
+            self.error1D = savgol_filter(self.spec['error'], self.smoothing, 2)/np.sqrt(self.smoothing)
+            self.model1D = savgol_filter(self.spec['model'], self.smoothing, 2)
+         if self.smoothing == 1:
+            self.flux1D = self.spec['flux']
+            self.error1D = self.spec['error']
          self.model1D = self.spec['model']
       
       self.draw()
@@ -1823,7 +1926,9 @@ class ldss3_redshiftgui:
       # Clear plots
       self.plot_redshift.clear()
       self.plot_spec1D.clear()
-      
+      if len(self.wave) != len(self.flux1D):
+        print(f"Error: wave array length {len(self.wave)} does not match flux array length {len(self.flux1D)}")
+        return
       
       if self.redshifted == 1:
          
