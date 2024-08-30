@@ -1611,7 +1611,8 @@ class ldss3_redshiftgui:
          max_wave = np.max(self.spec['wave'])
          wave = np.arange(min_wave, max_wave, delta)
 
-         # Add interpolation of the original spectrum data onto the new wavelength grid
+         # interpolate original spectrum data onto the new wavelength grid bc of size mismatches
+         # might be unnecessary
          interp_flux = np.interp(wave, self.spec['wave'], self.spec['flux'])
          interp_error = np.interp(wave, self.spec['wave'], self.spec['error'])
          interp_model = np.interp(wave, self.spec['wave'], self.spec['model'])
@@ -1620,7 +1621,7 @@ class ldss3_redshiftgui:
          interp_raw = np.interp(wave, self.spec['wave'], self.spec['raw'])
          interp_rawerr = np.interp(wave, self.spec['wave'], self.spec['rawerr'])
 
-         # Initialize the smoothed spectrum
+         # initialize smoothed version
          smoothed_spec = Table()
          smoothed_spec['wave'] = wave
          smoothed_spec['flux'] = np.zeros_like(wave)
@@ -1631,9 +1632,8 @@ class ldss3_redshiftgui:
          smoothed_spec['raw'] = np.zeros_like(wave)
          smoothed_spec['rawerr'] = np.zeros_like(wave)
 
-         # Loop through the new wavelength grid
          for i, pixel in enumerate(smoothed_spec):
-            # Define the window range based on the current pixel
+            # define the window range based on the current pixel
             thispixel_flux = interp_flux[(wave >= (pixel['wave'] - delta / 2)) &
                                          (wave < (pixel['wave'] + delta / 2))]
             thispixel_error = interp_error[(wave >= (pixel['wave'] - delta / 2)) &
@@ -1649,7 +1649,7 @@ class ldss3_redshiftgui:
             thispixel_rawerr = interp_rawerr[(wave >= (pixel['wave'] - delta / 2)) &
                                              (wave < (pixel['wave'] + delta / 2))]
 
-            # Average the data in the window and assign it to the smoothed spectrum
+            # average the data in the window and assign it to the smoothed spectrum
             smoothed_spec['flux'][i] = np.nanmean(thispixel_flux)
             smoothed_spec['error'][i] = np.nanmean(thispixel_error)
             smoothed_spec['model'][i] = np.nanmean(thispixel_model)
@@ -1658,7 +1658,7 @@ class ldss3_redshiftgui:
             smoothed_spec['raw'][i] = np.nanmean(thispixel_raw)
             smoothed_spec['rawerr'][i] = np.nanmean(thispixel_rawerr)
 
-         # Replace the original spectrum with the smoothed one
+         # replace the original spectrum with the smoothed one
          self.spec = smoothed_spec
          self.wave = wave
          self.flux1D = smoothed_spec['flux']
