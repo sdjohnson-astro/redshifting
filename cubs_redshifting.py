@@ -1596,105 +1596,47 @@ class ldss3_redshiftgui:
        
        self.draw()
 
+   def inverse_weighted_rebin(self):
+      # factor to smooth by, make it smaller than for savgol
+      factor = int(self.smoothing/2)
+
+      nPix_out = int(self.spec.size/factor)
+      # print(f'Spec size: {self.spec.size}, factor: {factor}, npix: {nPix_out}')
+
+
+      spec_in = self.spec[0:int(self.spec.size/factor)*factor]
+
+      wave = np.reshape(spec_in['wave'][:nPix_out * factor], (nPix_out, factor))
+      flux = np.reshape(spec_in['flux'][:nPix_out * factor], (nPix_out, factor))
+      error = np.reshape(spec_in['error'][:nPix_out * factor], (nPix_out, factor))
+      model = np.reshape(spec_in['model'][:nPix_out * factor], (nPix_out, factor))
+
+      # Now, perform the operations on each reshaped field
+      wave_avg = np.mean(wave, axis=1)
+      weight = 1 / (error ** 2)
+      flux_weighted_avg = np.average(flux, axis=1, weights=weight)
+      error_combined = np.sqrt(np.sum((error / factor) ** 2, axis=1))
+      model_avg = np.average(model, axis=1)
+
+      return wave_avg, flux_weighted_avg, error_combined, model_avg
+
+
    def smoothSpec(self, type = 'stacked'):
    
       if type == 'stacked':
+         # save original spec so can be undone
          if not hasattr(self, 'original_spec'):
             self.original_spec = self.spec.copy()
             self.original_wave = self.wave.copy()
-            self.original_flux1D = self.flux1D
-            self.original_error1D = self.error1D
-            self.original_model1D = self.model1D
 
-         delta = self.smoothing/4
-         min_wave = np.min(self.spec['wave'])
-         max_wave = np.max(self.spec['wave'])
-         wave = np.arange(min_wave, max_wave, delta)
-
-         # interpolate original spectrum data onto the new wavelength grid bc of size mismatches
-         # might be unnecessary
-         interp_flux = np.interp(wave, self.spec['wave'], self.spec['flux'])
-         interp_error = np.interp(wave, self.spec['wave'], self.spec['error'])
-         interp_model = np.interp(wave, self.spec['wave'], self.spec['model'])
-         interp_mask = np.interp(wave, self.spec['wave'], self.spec['mask'])
-         interp_arc = np.interp(wave, self.spec['wave'], self.spec['arc'])
-         interp_raw = np.interp(wave, self.spec['wave'], self.spec['raw'])
-         interp_rawerr = np.interp(wave, self.spec['wave'], self.spec['rawerr'])
-
-         # initialize smoothed version
-         smoothed_spec = Table()
-         smoothed_spec['wave'] = wave
-         smoothed_spec['flux'] = np.zeros_like(wave)
-         smoothed_spec['error'] = np.zeros_like(wave)
-         smoothed_spec['model'] = np.zeros_like(wave)
-         smoothed_spec['mask'] = np.zeros_like(wave)
-         smoothed_spec['arc'] = np.zeros_like(wave)
-         smoothed_spec['raw'] = np.zeros_like(wave)
-         smoothed_spec['rawerr'] = np.zeros_like(wave)
-
-         for i, pixel in enumerate(smoothed_spec):
-            # define the window range based on the current pixel
-            thispixel_flux = interp_flux[(wave >= (pixel['wave'] - delta / 2)) &
-                                         (wave < (pixel['wave'] + delta / 2))]
-            thispixel_error = interp_error[(wave >= (pixel['wave'] - delta / 2)) &
-                                           (wave < (pixel['wave'] + delta / 2))]
-            thispixel_model = interp_model[(wave >= (pixel['wave'] - delta / 2)) &
-                                           (wave < (pixel['wave'] + delta / 2))]
-            thispixel_mask = interp_mask[(wave >= (pixel['wave'] - delta / 2)) &
-                                         (wave < (pixel['wave'] + delta / 2))]
-            thispixel_arc = interp_arc[(wave >= (pixel['wave'] - delta / 2)) &
-                                       (wave < (pixel['wave'] + delta / 2))]
-            thispixel_raw = interp_raw[(wave >= (pixel['wave'] - delta / 2)) &
-                                       (wave < (pixel['wave'] + delta / 2))]
-            thispixel_rawerr = interp_rawerr[(wave >= (pixel['wave'] - delta / 2)) &
-                                             (wave < (pixel['wave'] + delta / 2))]
-
-            # average the data in the window and assign it to the smoothed spectrum
-            smoothed_spec['flux'][i] = np.nanmean(thispixel_flux)
-            smoothed_spec['error'][i] = np.nanmean(thispixel_error)
-            smoothed_spec['model'][i] = np.nanmean(thispixel_model)
-            smoothed_spec['mask'][i] = np.nanmean(thispixel_mask)
-            smoothed_spec['arc'][i] = np.nanmean(thispixel_arc)
-            smoothed_spec['raw'][i] = np.nanmean(thispixel_raw)
-            smoothed_spec['rawerr'][i] = np.nanmean(thispixel_rawerr)
-
-         # replace the original spectrum with the smoothed one
-         self.spec = smoothed_spec
-         self.wave = wave
-         self.flux1D = smoothed_spec['flux']
-         self.error1D = smoothed_spec['error']
-         self.model1D = smoothed_spec['model']
-         # min = np.min(self.spec['wave'])
-         # max = np.max(self.spec['wave'])
-         # delta = 2
-         # wave = np.arange(min, max, delta)
-
-         # smoothed_spec = Table()
-         # smoothed_spec['wave'] = wave
-         # smoothed_spec['flux'] = 0.0
-         # smoothed_spec['error'] = 0.0
-         # smoothed_spec['model'] = 0.0
-         # smoothed_spec['mask'] = 0.0
-         # smoothed_spec['arc'] = 0.0
-         # smoothed_spec['raw'] = 0.0
-         # smoothed_spec['rawerr'] = 0.0
-
-         # for pixel in smoothed_spec:
-         #    thispixel = self.spec[(self.spec['wave'] >= (pixel['wave'] - delta/2)) 
-         #                          & (self.spec['wave'] < (pixel['wave'] + delta/2))]
-         #    pixel['flux'] = np.nanmean(thispixel['flux'])
-         #    pixel['error'] = np.nanmean(thispixel['error'])
-         #    pixel['model'] = np.nanmean(thispixel['model'])
-         #    pixel['mask'] = np.nanmean(thispixel['mask'])
-         #    pixel['arc'] = np.nanmean(thispixel['arc'])
-         #    pixel['raw'] = np.nanmean(thispixel['raw'])
-         #    pixel['rawerr'] = np.nanmean(thispixel['rawerr'])
-
-         # self.spec = smoothed_spec
-         # self.flux1D = smoothed_spec['flux']
-         # self.error1D = smoothed_spec['error']
-         # self.model1D = smoothed_spec['model']
-
+         wave, flux, error, model = self.inverse_weighted_rebin()
+         # print(f'Shape of wave: {wave.shape}, shape of flux: {flux.shape}')
+         interp_function = interp1d(wave, flux, fill_value="extrapolate", bounds_error=False)
+         interp_err_function = interp1d(wave, error, fill_value="extrapolate", bounds_error=False)
+         interp_model_function = interp1d(wave, model, fill_value="extrapolate", bounds_error=False)
+         self.flux1D = interp_function(self.spec['wave'])
+         self.error1D = interp_err_function(self.spec['wave'])
+         self.model1D = interp_model_function(self.spec['wave'])
   
       if type == 'savgol':
          """Smooth the spectrum using Savitzky-Golay filter."""
@@ -1859,7 +1801,7 @@ class ldss3_redshiftgui:
 
       self.extpos = self.objects[self.row-1]['extpos']
       self.extaper = self.objects[self.row-1]['extaper']
-      self.smoothSpec()
+      self.smoothSpec(type='savgol')
       
       # Check for redshift filename and read in if present.
       redshiftFilename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
