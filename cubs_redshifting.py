@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from PyQt5 import QtGui, QtCore  # (the example applies equally well to PySide)
+from PyQt5 import QtCore, QtWidgets  # (the example applies equally well to PySide)
 import pyqtgraph as pg
 import sys
 import os
@@ -217,9 +217,8 @@ class ldss3_redshiftgui:
       
       
       # Get the GUI ready
-      self.app = QtGui.QApplication([])
-      #self.app = QtWidgets.QApplication(sys.argv)       # Always start by initializing Qt
-      self.widget = QtGui.QWidget()       # Define a top-level widget
+      self.app = QtWidgets.QApplication(sys.argv)       # Always start by initializing Qt
+      self.widget = QtWidgets.QWidget()       # Define a top-level widget
       
       # Set the widget size
       self.widget.resize(self.xsize, self.ysize)
@@ -260,8 +259,6 @@ class ldss3_redshiftgui:
       cm.pos=np.array([1.,0.]) #is this really the easiest way to make white->black into black->white?
       self.plot_spec2D_hist.gradient.setColorMap(cm)
       
-      # self.plot_spec2D.scene().sigMouseMoved.connect(self.mouseMoved_spec2D)
-      
       # Set the 1D spectrum
       self.plot_spec1D = pg.PlotWidget()
       self.plot_spec1D.getAxis('bottom').setPen(pg.mkPen('w', width=2))
@@ -276,8 +273,6 @@ class ldss3_redshiftgui:
       self.plot_spec1D.showAxis('top')
       self.plot_spec1D.setLabel('bottom', 'Wavelength [&#8491;]')
 
-      # self.plot_spec2D.getAxis('bottom').linkToView(self.plot_spec1D.getVieWBox())
-      #self.plot_spec1D.setLabel('left', 'Flux')
       
       self.mouse_x_spec1D = 0.0
       self.mouse_y_spec1D = 0.0
@@ -286,135 +281,129 @@ class ldss3_redshiftgui:
       self.mouse_x_spec2D = 0.0
       self.mouse_y_spec2D = 0.0
       
-      # Tie the image and spectrum
-      # self.plot_spec2D.translate(4000,0)
-      # self.plot_spec2D.scale(2,1)
-      # self.plot_spec2D_view.linkView(self.plot_spec2D_view.XAxis,self.plot_spec1D.getViewBox())
-      
-      
       # Setup the layout
-      self.layout = QtGui.QGridLayout()
+      self.layout = QtWidgets.QGridLayout()
       self.widget.setLayout(self.layout)
       
       
       
       # Set up right click menu
-      self.featureListMenu = QtGui.QMenu("Galaxy lines")
+      self.featureListMenu = QtWidgets.QMenu("Galaxy lines")
       
-      self.OVI1033 = QtGui.QAction("OVI 1033.82", self.featureListMenu)
+      self.OVI1033 = QtWidgets.QAction("OVI 1033.82", self.featureListMenu)
       self.OVI1033.triggered.connect(self.setRedshiftOVI1033)
       self.featureListMenu.addAction(self.OVI1033)
       
       
-      self.HI1215 = QtGui.QAction("HI Lya 1215.24", self.featureListMenu)
+      self.HI1215 = QtWidgets.QAction("HI Lya 1215.24", self.featureListMenu)
       self.HI1215.triggered.connect(self.setRedshiftHI1215)
       self.featureListMenu.addAction(self.HI1215)
       
-      self.NV1240 = QtGui.QAction("NV 1240.81", self.featureListMenu)
+      self.NV1240 = QtWidgets.QAction("NV 1240.81", self.featureListMenu)
       self.NV1240.triggered.connect(self.setRedshiftNV1240)
       self.featureListMenu.addAction(self.NV1240)
       
-      self.CIV1549 = QtGui.QAction("CIV 1549.48", self.featureListMenu)
+      self.CIV1549 = QtWidgets.QAction("CIV 1549.48", self.featureListMenu)
       self.CIV1549.triggered.connect(self.setRedshiftCIV1549)
       self.featureListMenu.addAction(self.CIV1549)
       
-      self.OIII1665 = QtGui.QAction("OIII 1665.85", self.featureListMenu)
+      self.OIII1665 = QtWidgets.QAction("OIII 1665.85", self.featureListMenu)
       self.OIII1665.triggered.connect(self.setRedshiftOIII1665)
       self.featureListMenu.addAction(self.OIII1665)
       
-      self.CIII1908 = QtGui.QAction("CIII 1908.734", self.featureListMenu)
+      self.CIII1908 = QtWidgets.QAction("CIII 1908.734", self.featureListMenu)
       self.CIII1908.triggered.connect(self.setRedshiftCIII1908)
       self.featureListMenu.addAction(self.CIII1908)
       
-      self.MgII2799 = QtGui.QAction("MgII 2799.117", self.featureListMenu)
+      self.MgII2799 = QtWidgets.QAction("MgII 2799.117", self.featureListMenu)
       self.MgII2799.triggered.connect(self.setRedshiftMgII2799)
       self.featureListMenu.addAction(self.MgII2799)
       
-      self.OII3728 = QtGui.QAction("[OII] 3728.60", self.featureListMenu)
+      self.OII3728 = QtWidgets.QAction("[OII] 3728.60", self.featureListMenu)
       self.OII3728.triggered.connect(self.setRedshiftOII3728)
       self.featureListMenu.addAction(self.OII3728)
       
-      self.CaIIK3934 = QtGui.QAction("CaII K 3934.777", self.featureListMenu)
+      self.CaIIK3934 = QtWidgets.QAction("CaII K 3934.777", self.featureListMenu)
       self.CaIIK3934.triggered.connect(self.setRedshiftCaIIK3934)
       self.featureListMenu.addAction(self.CaIIK3934)
       
-      self.CaIIH3969 = QtGui.QAction("CaII H 3969.588", self.featureListMenu)
+      self.CaIIH3969 = QtWidgets.QAction("CaII H 3969.588", self.featureListMenu)
       self.CaIIH3969.triggered.connect(self.setRedshiftCaIIH3969)
       self.featureListMenu.addAction(self.CaIIH3969)
       
-      self.Hd4102 = QtGui.QAction("Hd 4102.89", self.featureListMenu)
+      self.Hd4102 = QtWidgets.QAction("Hd 4102.89", self.featureListMenu)
       self.Hd4102.triggered.connect(self.setRedshiftHd4102)
       self.featureListMenu.addAction(self.Hd4102)
       
-      self.Gband4305 = QtGui.QAction("G-band 4305.61", self.featureListMenu)
+      self.Gband4305 = QtWidgets.QAction("G-band 4305.61", self.featureListMenu)
       self.Gband4305.triggered.connect(self.setRedshiftGband4305)
       self.featureListMenu.addAction(self.Gband4305)
       
-      self.Hg4341 = QtGui.QAction("Hg 4341.68", self.featureListMenu)
+      self.Hg4341 = QtWidgets.QAction("Hg 4341.68", self.featureListMenu)
       self.Hg4341.triggered.connect(self.setRedshiftHg4341)
       self.featureListMenu.addAction(self.Hg4341)
       
-      self.OIII4364 = QtGui.QAction("[OIII] 4364.436", self.featureListMenu)
+      self.OIII4364 = QtWidgets.QAction("[OIII] 4364.436", self.featureListMenu)
       self.OIII4364.triggered.connect(self.setRedshiftOIII4364)
       self.featureListMenu.addAction(self.OIII4364)
       
-      self.Hb4862 = QtGui.QAction("Hb 4862", self.featureListMenu)
+      self.Hb4862 = QtWidgets.QAction("Hb 4862", self.featureListMenu)
       self.Hb4862.triggered.connect(self.setRedshiftHb4862)
       self.featureListMenu.addAction(self.Hb4862)
       
-      self.OIII4960 = QtGui.QAction("[OIII] 4960.295", self.featureListMenu)
+      self.OIII4960 = QtWidgets.QAction("[OIII] 4960.295", self.featureListMenu)
       self.OIII4960.triggered.connect(self.setRedshiftOIII4960)
       self.featureListMenu.addAction(self.OIII4960)
       
-      self.OIII5008 = QtGui.QAction("[OIII] 5008.240", self.featureListMenu)
+      self.OIII5008 = QtWidgets.QAction("[OIII] 5008.240", self.featureListMenu)
       self.OIII5008.triggered.connect(self.setRedshiftOIII5008)
       self.featureListMenu.addAction(self.OIII5008)
       
-      self.MgI5176 = QtGui.QAction("MgI 5176.7", self.featureListMenu)
+      self.MgI5176 = QtWidgets.QAction("MgI 5176.7", self.featureListMenu)
       self.MgI5176.triggered.connect(self.setRedshiftMgI5176)
       self.featureListMenu.addAction(self.MgI5176)
       
-      self.NaI5895 = QtGui.QAction("NaI 5895.6", self.featureListMenu)
+      self.NaI5895 = QtWidgets.QAction("NaI 5895.6", self.featureListMenu)
       self.NaI5895.triggered.connect(self.setRedshiftNaI5895)
       self.featureListMenu.addAction(self.NaI5895)
       
-      self.OI6302 = QtGui.QAction("[OI] 6302.046", self.featureListMenu)
+      self.OI6302 = QtWidgets.QAction("[OI] 6302.046", self.featureListMenu)
       self.OI6302.triggered.connect(self.setRedshiftOI6302)
       self.featureListMenu.addAction(self.OI6302)
       
-      self.OI6365 = QtGui.QAction("[OI] 6365.536", self.featureListMenu)
+      self.OI6365 = QtWidgets.QAction("[OI] 6365.536", self.featureListMenu)
       self.OI6365.triggered.connect(self.setRedshiftOI6365)
       self.featureListMenu.addAction(self.OI6365)
       
-      self.NII6549 = QtGui.QAction("[NII] 6549.86", self.featureListMenu)
+      self.NII6549 = QtWidgets.QAction("[NII] 6549.86", self.featureListMenu)
       self.NII6549.triggered.connect(self.setRedshiftNII6549)
       self.featureListMenu.addAction(self.NII6549)
       
-      self.Ha6564 = QtGui.QAction("Ha 6564.61", self.featureListMenu)
+      self.Ha6564 = QtWidgets.QAction("Ha 6564.61", self.featureListMenu)
       self.Ha6564.triggered.connect(self.setRedshiftHa6564)
       self.featureListMenu.addAction(self.Ha6564)
       
-      self.NII6585 = QtGui.QAction("[NII] 6585.27", self.featureListMenu)
+      self.NII6585 = QtWidgets.QAction("[NII] 6585.27", self.featureListMenu)
       self.NII6585.triggered.connect(self.setRedshiftNII6585)
       self.featureListMenu.addAction(self.NII6585)
       
-      self.SII6718 = QtGui.QAction("[SII] 6718.29", self.featureListMenu)
+      self.SII6718 = QtWidgets.QAction("[SII] 6718.29", self.featureListMenu)
       self.SII6718.triggered.connect(self.setRedshiftSII6718)
       self.featureListMenu.addAction(self.SII6718)
       
-      self.SII6732 = QtGui.QAction("[SII] 6732.67", self.featureListMenu)
+      self.SII6732 = QtWidgets.QAction("[SII] 6732.67", self.featureListMenu)
       self.SII6732.triggered.connect(self.setRedshiftSII6732)
       self.featureListMenu.addAction(self.SII6732)
       
-      self.CaII8500 = QtGui.QAction("CaII 8500.36", self.featureListMenu)
+      self.CaII8500 = QtWidgets.QAction("CaII 8500.36", self.featureListMenu)
       self.CaII8500.triggered.connect(self.setRedshiftCaII8500)
       self.featureListMenu.addAction(self.CaII8500)
       
-      self.CaII8544 = QtGui.QAction("CaII 8544.44", self.featureListMenu)
+      self.CaII8544 = QtWidgets.QAction("CaII 8544.44", self.featureListMenu)
       self.CaII8544.triggered.connect(self.setRedshiftCaII8544)
       self.featureListMenu.addAction(self.CaII8544)
       
-      self.CaII8664 = QtGui.QAction("CaII 8664.52", self.featureListMenu)
+      self.CaII8664 = QtWidgets.QAction("CaII 8664.52", self.featureListMenu)
       self.CaII8664.triggered.connect(self.setRedshiftCaII8664)
       self.featureListMenu.addAction(self.CaII8664)
       
@@ -464,12 +453,12 @@ class ldss3_redshiftgui:
       self.objectsTable.setFormat('%0.5f', 2)
       self.setTable()
       
-      self.objectsTable.setSelectionBehavior(QtGui.QAbstractItemView.SelectRows)
-      self.objectsTable.setSelectionMode(QtGui.QAbstractItemView.SingleSelection)
+      self.objectsTable.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+      self.objectsTable.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
       self.objectsTable.doubleClicked.connect(self.goToObject)
       
       # Add comment bar
-      self.comment_text = QtGui.QLineEdit('comments here')
+      self.comment_text = QtWidgets.QLineEdit('comments here')
       self.comment_text.focusOutEvent = self.updateComment
       
       
@@ -502,8 +491,10 @@ class ldss3_redshiftgui:
 
       #Set 2D X-axis values to be equal to the 1D--this works so long as all spectra are the same size
       #since it is just based on the first one read in
-      self.plot_spec2D.translate(min(self.wave),0)
-      self.plot_spec2D.scale((max(self.wave)-min(self.wave))/len(self.wave),1)
+      tr = pg.QtGui.QTransform()
+      tr.translate(min(self.wave),0)
+      tr.scale((max(self.wave)-min(self.wave))/len(self.wave),1)
+      self.plot_spec2D.setTransform(tr)
       self.plot_spec2D_plot.setXLink(self.plot_spec1D)
 
       
@@ -1621,10 +1612,12 @@ class ldss3_redshiftgui:
       return wave_avg, flux_weighted_avg, error_combined, model_avg
 
 
-   def smoothSpec(self, type = 'stacked'):
+   def smoothSpec(self, type = 'inverse_variance_weighted'):
    
-      if type == 'stacked':
-         # save original spec so can be undone
+      if type == 'inverse_variance_weighted':
+         """Smooth the spectrum using rebinning and inverse variance weighting."""
+
+         # save original spec so smoothing can be undone
          if not hasattr(self, 'original_spec'):
             self.original_spec = self.spec.copy()
             self.original_wave = self.wave.copy()
@@ -1962,11 +1955,8 @@ class ldss3_redshiftgui:
                print('Trace file not loaded')
 
       self.objectsTable.selectRow(self.row-1)
-      self.objectsTable.scrollToItem(self.objectsTable.item(self.row-1,0),QtGui.QAbstractItemView.PositionAtCenter)
-      # temp=self.objectsTable.indexFromItem(self.objectsTable.item(self.row-1,0))
-      # import pdb
-      # pdb.set_trace()
-      # self.objectsTable.scrollTo(temp,QtGui.QAbstractItemView.PositionAtCenter)
+      self.objectsTable.scrollToItem(self.objectsTable.item(self.row-1,0),QtWidgets.QAbstractItemView.PositionAtCenter)
+
       
 
 
