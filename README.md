@@ -9,6 +9,7 @@
 * PyQt5 (https://www.riverbankcomputing.com/software/pyqt)
 * pyqtgraph (http://www.pyqtgraph.org/)
 * lmfit (https://lmfit.github.io/lmfit-py/)
+* corner (https://corner.readthedocs.io/en/latest/)
 
 # Conda setup
 conda create --name redshifting python=3.10.14
@@ -16,10 +17,15 @@ conda create --name redshifting python=3.10.14
 conda activate redshifting
 
 conda install -c conda-forge pyqt
+
 conda install -c anaconda pyqtgraph
+
 conda install -c conda-forge astropy
+
 conda install -c conda-forge lmfit
+
 conda install -c astropy corner
+
 conda activate redshifting
 
 # Download the code and add these to your startup file (.zshrc if using conda on a mac)
