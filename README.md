@@ -11,8 +11,10 @@
 * lmfit (https://lmfit.github.io/lmfit-py/)
 
 # Conda setup
-conda create --name redshifting python=3.7
-conda activate redshifting37
+conda create --name redshifting python=3.10.14
+
+conda activate redshifting
+
 conda install -c conda-forge pyqt
 conda install -c anaconda pyqtgraph
 conda install -c conda-forge astropy
