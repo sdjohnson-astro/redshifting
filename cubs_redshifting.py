@@ -233,7 +233,14 @@ class ldss3_redshiftgui:
             
       path = '{}_spec1D'.format(mask)
       self.objects = Table.read('{}/{}_objects.fits'.format(path, mask))
-      self.objects['best_fit_class'] = 'N/A'
+
+      #decode np.chararray contents as strings instead of byte strings (to get rid of b'' bug)
+      self.objects['comment'] = [comment.decode('utf-8') if isinstance(comment, bytes) else comment for comment in self.objects['comment']]
+      self.objects['class'] = [cls.decode('utf-8') if isinstance(cls, bytes) else cls for cls in self.objects['class']]
+      self.objects['best_fit_class'] = [cls.decode('utf-8') if isinstance(cls, bytes) else cls for cls in self.objects['best_fit_class']]
+      self.objects['id'] = [cls.decode('utf-8') if isinstance(cls, bytes) else cls for cls in self.objects['id']]
+
+
 
       
       # Set the initial row number to zero
