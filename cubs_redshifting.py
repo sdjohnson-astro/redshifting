@@ -19,6 +19,29 @@ import shutil
 
 
 def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,raw=0.0,rawerr=0.0):
+      """
+      Formats the input spectrum data into a structured array
+      Parameters:
+      ----------
+      wave (ndarray) : Wavelength array of the input spectrum in angstroms.
+      flux (ndarray) : Flux array of the input spectrum.
+      error (ndarray, opt): Error array corresponding to the flux values, default is 0.0 if not provided.
+      mask (float or ndarray, opt) : Mask to flag valid/invalid data points, default is 1.0 (valid) for all elements.
+      model (float or ndarray, opt) : Model flux, default is 0.0
+      flat (float or ndarray, opt) : Flat field correction values, default is 0.0
+      arc (float or ndarray, opt) : Arc line values, default is 0.0.
+      raw (float or ndarray, opt) : Raw (unprocessed) flux values, default is 0.0
+      rawerr (float or ndarray, opt) : Errors associated with the raw flux values, default is 0.0
+
+      Returns:
+      -------
+      spec (ndarray) : Structured array with wave, flux, error, mask, model, flat, arc, raw, and rawerr
+      
+      Notes:
+      -----
+      - If any values in 'flux' or 'error' are not finite (NaN or Inf), they are set to 0.0
+      - Any entry with an error of 0.0 has its 'mask' value set to 0.0 (invalid data)
+      """
       spec = np.zeros(len(flux),
                             dtype={'names':('wave', 'flux', 'error',
                                              'mask', 'model', 'flat', 'arc', 'raw', 'rawerr'), 
@@ -59,6 +82,19 @@ def getredshift1Dname(mask, row, id):
 
 #for CarPy output
 def createSpec1Dfiles(mask,version='carpy'):
+   """
+   Creates spec1D FITS files for a given mask, organizing spec data/object info.
+
+   Parameters:
+    ----------
+    mask (str) : Mask identifier used for reading data and naming output files.
+    version (str, optional) : Version of the data format ('carpy' or 'cosmos'), default is 'carpy'.
+
+    Output:
+    -------
+    - spec1D files: FITS files containing wavelength, flux, error, etc
+    - '_objects.fits': Summary table w/ object metadata (IDs, redshifts, classes, etc.) written to a FITS file.
+    """
    print('Creating spec1D files')
 
    if version=='carpy':
@@ -203,7 +239,8 @@ class ldss3_redshiftgui:
       # Set the initial row number to zero
       self.row = 1
       self.nRows = len(self.objects)
-      self.smoothing = 1
+      self.smoothing_savgol = 1
+      self.smoothing_weighted = 1
       
       self.z = 0.0
       self.redshifted = 0
@@ -477,11 +514,6 @@ class ldss3_redshiftgui:
       self.layout.setColumnStretch(1, 1)
       
       
-      
-      #self.layout.setColumnStretch(0, 2)
-      #self.layout.setColumnStretch(0, 2)
-      #self.layout.setColumnStretch(3, 1)
-      #self.layout.setColumnStretch(3, 0)
       self.layout.setRowStretch(0, 2)
       self.layout.setRowStretch(1, 1)
       self.layout.setRowStretch(2, 3)
@@ -497,12 +529,20 @@ class ldss3_redshiftgui:
       self.plot_spec2D.setTransform(tr)
       self.plot_spec2D_plot.setXLink(self.plot_spec1D)
 
+      # Add a status bar to the bottom that prints terminal output in the app
+      self.status_bar = QtWidgets.QStatusBar(self.widget)
+      self.layout.addWidget(self.status_bar, 5, 0, 1, 2)  # Adjust the position in the grid layout
+
+      self.updateStatusBar('')
       
       self.draw()
       
       self.widget.show()
       self.app.exec_()
       
+   def updateStatusBar(self, message):
+        self.status_bar.showMessage(message)
+        print(message) 
    
    def updateComment(self, event):
       
@@ -960,27 +1000,7 @@ class ldss3_redshiftgui:
       self.plot_spec1D.setXRange(np.min(self.wave), np.max(self.wave), padding=0)
 
    
-   # def zoom_redshift(self, key, ):
-   #    """Zoom in or out in wavelength (x) and/or flux (y)"""
-   
-   #    xRange = self.plot_redshift.getViewBox().state['viewRange'][0]
-   #    x0 = xRange[0]
-   #    x1 = xRange[1]
-   #    xRange = (x1 - x0)*scalex
-   #    x0_new = self.mouse_x_redshift - xRange/2.0
-   #    x1_new = self.mouse_x_redshift + xRange/2.0
-      
-   #    self.plot_redshift.setXRange(x0_new, x1_new, padding=0)
-      
-   #    yRange = self.plot_redshift.getViewBox().state['viewRange'][1]
-   #    y0 = yRange[0]
-   #    y1 = yRange[1]
-   #    yRange = (y1 - y0)*scaley
-   #    y0_new = self.mouse_y_redshift - yRange/2.0
-   #    y1_new = self.mouse_y_redshift + yRange/2.0
-      
-   #    self.plot_redshift.setYRange(y0_new, y1_new, padding=0)
-      
+
    def panx_redshift(self, scalex):
       """Pan in the wavelength direction"""
       
@@ -1054,30 +1074,32 @@ class ldss3_redshiftgui:
             # self.updateXrange_1D()            
             
          if (event.text() == '=') | (event.text() == '+'):
-            self.smoothing = self.smoothing + 2
+
+            #update the smoothing paramater for the savgol smoothing
+            self.smoothing_savgol = self.smoothing_savgol + 2
             
-            if self.smoothing == 3:
-               self.smoothing = 5
+            if self.smoothing_savgol == 3:
+               self.smoothing_savgol = 5
+
+            #update the smoothing paramater for the inverse weighted/rebinned smoothing
+            self.smoothing_weighted = self.smoothing_weighted + 1
                   
             self.smoothSpec()
             
-         # if (event.text() == '-') | (event.text() == '_'):
-         #    self.smoothing = self.smoothing - 2
+         if (event.text() == '-') | (event.text() == '_'):
+            #update the smoothing paramater for the savgol smoothing
+            self.smoothing_savgol = self.smoothing_savgol - 2
             
-         #    if self.smoothing < 5:
-         #       self.smoothing = 1
+            if self.smoothing_savgol < 5:
+               self.smoothing_savgol = 1
+
+            #update the smoothing paramater for the inverse weighted/rebinned smoothing
+            self.smoothing_weighted = self.smoothing_weighted - 1
          
-         #    self.smoothSpec()
-         if (event.text() == '-') | (event.text() == '_'):  # Detect '-' key press
-            if hasattr(self, 'original_spec'):
-                  self.spec = self.original_spec.copy()  # Revert to the original spectrum
-                  self.flux1D = self.spec['flux']
-                  self.error1D = self.spec['error']
-                  self.model1D = self.spec['model']
-                  self.wave = self.spec['wave']
-                  self.draw()  # Redraw the spectrum
+            if self.smoothing_weighted >=1:
+               self.smoothSpec()
             else:
-                  print("No original spectrum found to revert to.")
+               self.updateStatusBar("Can't undo smoothing any further, back to original spectrum")
             
          if event.text() == 'm':
             
@@ -1287,11 +1309,11 @@ class ldss3_redshiftgui:
          self.row = object['row']
          self.setSpec()
          if self.redshifted:
-            print('{}/{}   {}  already redshifted. Skipping'.format(self.row, self.nRows, object['class']))
+            self.updateStatusBar('{}/{}   {}  already redshifted. Skipping'.format(self.row, self.nRows, object['class']))
          else:
             self.autoMask()            
             self.redshiftObject()
-            print('{}/{}   {}   z_best={:0.4f}'.format(self.row, self.nRows, object['class'], object['redshift']))
+            self.updateStatusBar('{}/{}   {}   z_best={:0.4f}'.format(self.row, self.nRows, object['class'], object['redshift']))
          
       
    
@@ -1327,7 +1349,7 @@ class ldss3_redshiftgui:
          spec['model'] = model
          
          
-      print('Redshift assigned by hand {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
+      self.updateStatusBar('Redshift assigned by hand {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
       
       self.objects[self.row-1]['redshift'] = z
@@ -1403,7 +1425,7 @@ class ldss3_redshiftgui:
          redshifts.sort('z')
          self.redshifts = redshifts
          
-      print('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
+      self.updateStatusBar('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
 
       self.z = z
       self.param['z='] =  '{:0.5f}'.format(self.z)     
@@ -1481,7 +1503,7 @@ class ldss3_redshiftgui:
             
             
          
-         print('Redshifting {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],
+         self.updateStatusBar('Redshifting {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],
                                                         self.objects[self.row-1]['id'], z))
          
          self.objects[self.row-1]['redshift'] = z
@@ -1522,22 +1544,7 @@ class ldss3_redshiftgui:
                                   self.objects[self.row-1]['id'])
          self.redshifts.write(savename, overwrite=True)
          
-      print('Saved')   
-      # if os.path.isfile(path):
-      #    savename = getspec1Dname(self.mask, self.objects[self.row-1]['row'],
-      #                          self.objects[self.row-1]['id'])
-      #    fits.writeto(savename, self.spec, overwrite=True)
-      
-      # self.objects.write('{}/{}_objects.fits'.format(path, self.mask), overwrite=True)
-      
-      
-      # # If we have a redshift array, store it
-      # if self.redshifted == 1:
-      #    savename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
-      #                             self.objects[self.row-1]['id'])
-      #    self.redshifts.write(savename, overwrite=True)
-         
-      # print('Saved')   
+      self.updateStatusBar('Saved')   
 
    def autoMask(self):
       """Automatically mask things below and above some range, and the A band"""
@@ -1588,13 +1595,10 @@ class ldss3_redshiftgui:
        self.draw()
 
    def inverse_weighted_rebin(self):
-      # factor to smooth by, make it smaller than for savgol
-      factor = int(self.smoothing/2)
+      # Factor to smooth by, different than the savgol one
+      factor = int(self.smoothing_weighted)
 
       nPix_out = int(self.spec.size/factor)
-      # print(f'Spec size: {self.spec.size}, factor: {factor}, npix: {nPix_out}')
-
-
       spec_in = self.spec[0:int(self.spec.size/factor)*factor]
 
       wave = np.reshape(spec_in['wave'][:nPix_out * factor], (nPix_out, factor))
@@ -1602,7 +1606,7 @@ class ldss3_redshiftgui:
       error = np.reshape(spec_in['error'][:nPix_out * factor], (nPix_out, factor))
       model = np.reshape(spec_in['model'][:nPix_out * factor], (nPix_out, factor))
 
-      # Now, perform the operations on each reshaped field
+      # Now, smooth each reshaped field
       wave_avg = np.mean(wave, axis=1)
       weight = 1 / (error ** 2)
       flux_weighted_avg = np.average(flux, axis=1, weights=weight)
@@ -1623,22 +1627,23 @@ class ldss3_redshiftgui:
             self.original_wave = self.wave.copy()
 
          wave, flux, error, model = self.inverse_weighted_rebin()
-         # print(f'Shape of wave: {wave.shape}, shape of flux: {flux.shape}')
          interp_function = interp1d(wave, flux, fill_value="extrapolate", bounds_error=False)
          interp_err_function = interp1d(wave, error, fill_value="extrapolate", bounds_error=False)
          interp_model_function = interp1d(wave, model, fill_value="extrapolate", bounds_error=False)
          self.flux1D = interp_function(self.spec['wave'])
          self.error1D = interp_err_function(self.spec['wave'])
          self.model1D = interp_model_function(self.spec['wave'])
+
+         self.updateStatusBar(f'Smoothed with factor of {self.smoothing_weighted}')
   
       if type == 'savgol':
          """Smooth the spectrum using Savitzky-Golay filter."""
          
-         if self.smoothing > 1:
-            self.flux1D = savgol_filter(self.spec['flux'], self.smoothing, 2)
-            self.error1D = savgol_filter(self.spec['error'], self.smoothing, 2)/np.sqrt(self.smoothing)
-            self.model1D = savgol_filter(self.spec['model'], self.smoothing, 2)
-         if self.smoothing == 1:
+         if self.smoothing_savgol > 1:
+            self.flux1D = savgol_filter(self.spec['flux'], self.smoothing_savgol, 2)
+            self.error1D = savgol_filter(self.spec['error'], self.smoothing_savgol, 2)/np.sqrt(self.smoothing)
+            self.model1D = savgol_filter(self.spec['model'], self.smoothin_savgol, 2)
+         if self.smoothing_savgol == 1:
             self.flux1D = self.spec['flux']
             self.error1D = self.spec['error']
          self.model1D = self.spec['model']
@@ -1750,9 +1755,7 @@ class ldss3_redshiftgui:
       if self.row > self.nRows:
          self.row = 1
       self.setSpec()
-               
-      #print('{}/{}'.format(self.row, self.nRows))
-      #self.draw()
+
       
    def setSpec(self, autoRange=True):
       """Set the spectrum to current row"""
@@ -1762,7 +1765,7 @@ class ldss3_redshiftgui:
       if self.version=='carpy':
          self.id=self.objects[self.row-1]['id']
          if not os.path.isfile(getspec1Dname(self.mask, self.row, self.id)):
-            print('Files for {} do not exist. Moving on.'.format(self.id))
+            self.updateStatusBar('Files for {} do not exist. Moving on.'.format(self.id))
             self.redshifted=0
             self.advance(1)
             return
@@ -1862,7 +1865,7 @@ class ldss3_redshiftgui:
       self.plot_redshift.clear()
       self.plot_spec1D.clear()
       if len(self.wave) != len(self.flux1D):
-        print(f"Error: wave array length {len(self.wave)} does not match flux array length {len(self.flux1D)}")
+        self.updateStatusBar(f"Error: wave array length {len(self.wave)} does not match flux array length {len(self.flux1D)}")
         return
       
       if self.redshifted == 1:
@@ -1952,7 +1955,7 @@ class ldss3_redshiftgui:
                self.ext2=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace+self.extaper/2,pen=pen)
                self.ext3=self.plot_spec2D_plot.plot(self.wave,self.extpos+self.exttrace-self.extaper/2,pen=pen)
             except:
-               print('Trace file not loaded')
+               self.updateStatusBar('Trace file not loaded')
 
       self.objectsTable.selectRow(self.row-1)
       self.objectsTable.scrollToItem(self.objectsTable.item(self.row-1,0),QtWidgets.QAbstractItemView.PositionAtCenter)
