@@ -18,6 +18,7 @@ import shutil
 
 
 
+
 def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,raw=0.0,rawerr=0.0):
       """
       Formats the input spectrum data into a structured array
@@ -28,8 +29,8 @@ def formatspectrum(wave, flux, error=0.0, mask=1, model=0.0, flat=0.0, arc=0.0,r
       error (ndarray, opt): Error array corresponding to the flux values, default is 0.0 if not provided.
       mask (float or ndarray, opt) : Mask to flag valid/invalid data points, default is 1.0 (valid) for all elements.
       model (float or ndarray, opt) : Model flux, default is 0.0
-      flat (float or ndarray, opt) : Flat field correction values, default is 0.0
-      arc (float or ndarray, opt) : Arc line values, default is 0.0.
+      flat (float or ndarray, opt) : Extracted flat field frame, default is 0.0
+      arc (float or ndarray, opt) : Arc frame values used to check wavelength calibration, default is 0.0.
       raw (float or ndarray, opt) : Raw (unprocessed) flux values, default is 0.0
       rawerr (float or ndarray, opt) : Errors associated with the raw flux values, default is 0.0
 
