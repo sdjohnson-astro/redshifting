@@ -505,7 +505,10 @@ class ldss3_redshiftgui:
       # Add comment bar
       self.comment_text = QtWidgets.QLineEdit('comments here')
       self.comment_text.focusOutEvent = self.updateComment
-      
+
+      # Add status bar
+      self.status_bar = QtWidgets.QStatusBar(self.widget)
+      self.updateStatusBar('')
       
       # Add plot_bg to the layout
       self.layout.addWidget(self.plot_redshift, 0, 0)
@@ -514,7 +517,21 @@ class ldss3_redshiftgui:
       self.layout.addWidget(self.tree, 0, 1)
       self.layout.addWidget(self.objectsTable, 2, 1)
       self.layout.addWidget(self.plot_spec1D, 2, 0)
-      self.layout.addWidget(self.comment_text, 4, 0)
+      # self.layout.addWidget(self.comment_text, 4, 0)
+      self.layout.addWidget(self.comment_text, 4, 0, 1, 3)
+
+      # Create a horizontal layout for the comment bar and status bar
+      bottom_layout = QtWidgets.QHBoxLayout()
+
+      # Add the comment bar (4/5 of the bottom space)
+      bottom_layout.addWidget(self.comment_text, stretch=4)
+
+      # Add the status bar (1/5 of the bottom space)
+      bottom_layout.addWidget(self.status_bar, stretch=1)
+
+      # Add the horizontal layout to the main grid layout at the bottom (row 4)
+      self.layout.addLayout(bottom_layout, 4, 0, 1, 2)
+
       
       
       self.layout.setColumnStretch(0, 4)
@@ -536,12 +553,6 @@ class ldss3_redshiftgui:
       tr.scale((max(self.wave)-min(self.wave))/len(self.wave),1)
       self.plot_spec2D.setTransform(tr)
       self.plot_spec2D_plot.setXLink(self.plot_spec1D)
-
-      # Add a status bar to the bottom that prints terminal output in the app
-      self.status_bar = QtWidgets.QStatusBar(self.widget)
-      self.layout.addWidget(self.status_bar, 5, 0, 1, 2)  # Adjust the position in the grid layout
-
-      self.updateStatusBar('')
       
       self.draw()
       
@@ -1357,8 +1368,8 @@ class ldss3_redshiftgui:
          spec['model'] = model
          
          
-      self.updateStatusBar('Redshift assigned by hand {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
-
+      print('Redshift assigned by hand {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
+      self.updateStatusBar(f'Redshifted by hand (z={z:0.4f})')
       
       self.objects[self.row-1]['redshift'] = z
       self.objects[self.row-1]['best_fit_class'] = best_fit_type
@@ -1433,7 +1444,8 @@ class ldss3_redshiftgui:
          redshifts.sort('z')
          self.redshifts = redshifts
          
-      self.updateStatusBar('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
+      print('Redshifting Locally {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],self.objects[self.row-1]['id'], z))
+      self.updateStatusBar(f'Redshifted locally (z={z:0.4f})')
 
       self.z = z
       self.param['z='] =  '{:0.5f}'.format(self.z)     
@@ -1511,8 +1523,9 @@ class ldss3_redshiftgui:
             
             
          
-         self.updateStatusBar('Redshifting {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],
+         print('Redshifting {}   {}   z={:0.4f} and saved'.format(self.objects[self.row-1]['row'],
                                                         self.objects[self.row-1]['id'], z))
+         self.updateStatusBar(f'Redshifting z={z:0.4f}')
          
          self.objects[self.row-1]['redshift'] = z
          self.objects[self.row-1]['best_fit_class'] = best_fit_type
@@ -1552,7 +1565,7 @@ class ldss3_redshiftgui:
                                   self.objects[self.row-1]['id'])
          self.redshifts.write(savename, overwrite=True)
          
-      self.updateStatusBar('Saved')   
+      # self.updateStatusBar('Saved')   
 
    def autoMask(self):
       """Automatically mask things below and above some range, and the A band"""
@@ -1832,8 +1845,8 @@ class ldss3_redshiftgui:
       self.param['class:'] =  '{}'.format(self.objects[self.row-1]['class'])
       self.param['z='] =  '{:0.5f}'.format(self.objects[self.row-1]['redshift'])
       self.param['quality:'] =  '{}'.format(self.objects[self.row-1]['quality'])
-      self.param['Bad Extraction:'] =  bool(self.objects[self.row-1]['extflag'])
       self.param['best-fit classification:'] = '{}'.format(self.objects[self.row-1]['best_fit_class'])
+      self.param['Bad Extraction:'] =  bool(self.objects[self.row-1]['extflag'])
 
       
    def mouseMoved_redshift(self, pos):
