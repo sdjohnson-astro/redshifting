@@ -238,7 +238,7 @@ class ldss3_redshiftgui:
       #decode np.chararray contents as strings instead of byte strings (to get rid of b'' bug)
       self.objects['comment'] = [comment.decode('utf-8') if isinstance(comment, bytes) else comment for comment in self.objects['comment']]
       self.objects['class'] = [cls.decode('utf-8') if isinstance(cls, bytes) else cls for cls in self.objects['class']]
-      self.objects['best_fit_class'] = [cls.decode('utf-8') if isinstance(cls, bytes) else cls for cls in self.objects['best_fit_class']]
+      self.objects['best_fit_class'] = ['N/A'] * len(self.objects)
       self.objects['id'] = [cls.decode('utf-8') if isinstance(cls, bytes) else cls for cls in self.objects['id']]
 
 
