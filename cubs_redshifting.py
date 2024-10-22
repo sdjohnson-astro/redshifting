@@ -1112,10 +1112,9 @@ class ldss3_redshiftgui:
             if self.smoothing_savgol < 5:
                self.smoothing_savgol = 1
 
-            #update the smoothing paramater for the inverse weighted/rebinned smoothing
-            self.smoothing_weighted = self.smoothing_weighted - 1
-         
-            if self.smoothing_weighted >=1:
+            #update the smoothing parameter for the inverse weighted/rebinned smoothing
+            if self.smoothing_weighted >1:
+               self.smoothing_weighted = self.smoothing_weighted - 1
                self.smoothSpec()
             else:
                self.updateStatusBar("Can't undo smoothing any further, back to original spectrum")
@@ -1662,8 +1661,8 @@ class ldss3_redshiftgui:
          
          if self.smoothing_savgol > 1:
             self.flux1D = savgol_filter(self.spec['flux'], self.smoothing_savgol, 2)
-            self.error1D = savgol_filter(self.spec['error'], self.smoothing_savgol, 2)/np.sqrt(self.smoothing)
-            self.model1D = savgol_filter(self.spec['model'], self.smoothin_savgol, 2)
+            self.error1D = savgol_filter(self.spec['error'], self.smoothing_savgol, 2)/np.sqrt(self.smoothing_savgol)
+            self.model1D = savgol_filter(self.spec['model'], self.smoothing_savgol, 2)
          if self.smoothing_savgol == 1:
             self.flux1D = self.spec['flux']
             self.error1D = self.spec['error']
@@ -1818,7 +1817,7 @@ class ldss3_redshiftgui:
 
       self.extpos = self.objects[self.row-1]['extpos']
       self.extaper = self.objects[self.row-1]['extaper']
-      self.smoothSpec(type='savgol')
+      self.smoothSpec(type='inverse_variance_weighted')
       
       # Check for redshift filename and read in if present.
       redshiftFilename = getredshift1Dname(self.mask, self.objects[self.row-1]['row'],
